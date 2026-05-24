@@ -59,9 +59,9 @@
 
                                 <TextBlock>
                                     <TextBlock.Inlines>
-                                        <Run Text="Type 'Delete" />
-                                        <Run Text="{Binding Name}" />
-                                        <Run Text="' to proceed" />
+                                        <Run Text="Type" />
+                                        <Run Text="{Binding DeleteString}" />
+                                        <Run Text="to proceed" />
                                     </TextBlock.Inlines>
                                 </TextBlock>
 

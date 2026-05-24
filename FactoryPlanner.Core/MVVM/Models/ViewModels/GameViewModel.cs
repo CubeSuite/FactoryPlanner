@@ -40,7 +40,8 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 
         [ObservableProperty]
         public partial string DeleteConfirmation { get; set; }
-        public bool AllowDelete => DeleteConfirmation == $"Delete {Name}";
+        public bool AllowDelete => DeleteConfirmation == DeleteString.Replace("'", "");
+        public string DeleteString => $"'Delete {Name}'";
 
         // Constructors
 
