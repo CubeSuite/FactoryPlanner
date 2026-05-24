@@ -1,0 +1,39 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using FactoryPlanner.Services.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace FactoryPlanner.Services
+{
+    public class NavigationService : INavigationService
+    {
+        // Events
+        public event Action<ObservableObject>? NavigationRequested;
+        public event Action<bool>? AllowNavigationChanged;
+
+        // Fields
+        private bool _allowNavigation = true;
+
+        // Properties
+
+        public bool AllowNavigation {
+            get => _allowNavigation;
+            set {
+                if (_allowNavigation == value) return;
+                _allowNavigation = value;
+                AllowNavigationChanged?.Invoke(value);
+            }
+        }
+
+        // Public Functions
+
+        public void Navigate(ObservableObject pageViewModel) {
+            if (AllowNavigation) NavigationRequested?.Invoke(pageViewModel);
+        }
+    }
+}

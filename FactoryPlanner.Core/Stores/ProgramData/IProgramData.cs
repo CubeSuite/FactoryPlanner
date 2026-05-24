@@ -1,0 +1,17 @@
+using System;
+
+namespace FactoryPlanner.Stores.Interfaces
+{
+    public interface IProgramData
+    {
+        // Properties
+        IFilePaths FilePaths { get; }
+        bool IsDebugBuild { get; }
+        string ProgramName { get; }
+        Version ProgramVersion { get; }
+        bool EnableBackups { get; }
+        EncryptionLevel EncryptionLevel { get; }
+        bool UsesApi { get; }
+        bool UsesRemoteDatabase { get; }
+    }
+}

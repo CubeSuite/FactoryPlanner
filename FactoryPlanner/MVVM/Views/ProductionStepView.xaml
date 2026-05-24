@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl x:Class="FactoryPlanner.MVVM.Views.ProductionStepView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="using:FactoryPlanner.MVVM.Views"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
+
+    <Border Background="{ThemeResource SolidBackgroundFillColorQuarternary}"
+            CornerRadius="8">
+        <Grid Margin="8"
+              ColumnSpacing="8"
+              RowSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <!--  Inptus  -->
+            <ItemsRepeater x:Name="InputsContainer"
+                           ItemsSource="{Binding Recipe.Inputs}" />
+
+            <TextBlock Grid.Column="1"
+                       HorizontalAlignment="Center">
+                <TextBlock.Inlines>
+                    <Run Text="{Binding NumMachines}" />
+                    <Run Text=" " />
+                    <Run Text="{Binding MachineNameLabel}" />
+                </TextBlock.Inlines>
+            </TextBlock>
+
+            <Image Source="{Binding IconPath}"
+                   MaxWidth="100"
+                   MaxHeight="100"
+                   Grid.Column="1"
+                   Grid.Row="1" />
+
+        </Grid>
+    </Border>
+</UserControl>

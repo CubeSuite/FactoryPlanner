@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "FactoryPlanner (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "FactoryPlanner (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

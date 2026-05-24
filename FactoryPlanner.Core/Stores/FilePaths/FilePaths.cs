@@ -1,0 +1,24 @@
+using FactoryPlanner.Stores.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Windows.Storage;
+
+namespace FactoryPlanner.Stores
+{
+    public class FilePaths : IFilePaths
+    {
+        // Properties
+        public string RootFolder => ApplicationData.Current.LocalFolder.Path;
+        public string DataFolder => $"{RootFolder}\\Data";
+        public string LogsFolder => $"{RootFolder}\\Logs";
+        public string CrashReportsFolder => $"{RootFolder}\\CrashReports";
+
+        public string TempMetadataFile => $"{RootFolder}\\metadata.json";
+        public string SettingsFile => $"{DataFolder}\\Settings.json";
+        public string KeyFile => $"{DataFolder}\\EncryptionKey.bin";
+        public string Database => $"{DataFolder}\\Database.db";
+    }
+}

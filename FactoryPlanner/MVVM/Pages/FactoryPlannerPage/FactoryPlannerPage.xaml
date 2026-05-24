@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page x:Class="FactoryPlanner.MVVM.Pages.FactoryPlannerPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:local="using:FactoryPlanner.MVVM.Pages"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:views="using:FactoryPlanner.MVVM.Views"
+      mc:Ignorable="d">
+
+    <Grid Margin="8"
+          PointerMoved="OnCanvasPointerMoved"
+          PointerPressed="OnCanvasClicked"
+          PointerReleased="OnCanvasPointerReleased"
+          PointerWheelChanged="OnCanvasPointerWheelChanged">
+
+        <Canvas x:Name="GridCanvas"
+                Background="Transparent" /> 
+
+        <Canvas x:Name="MainCanvas"
+                Background="Transparent">
+
+            <ItemsControl x:Name="StepsItemsControl"
+                          ItemsSource="{Binding ProductionLine.Steps}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <views:ProductionStepView />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+
+            </ItemsControl>
+        </Canvas>
+
+        <Button HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                ToolTipService.ToolTip="To Parent">
+            <FontIcon Glyph="&#xE74A;" />
+        </Button>
+
+        <ToggleButton x:Name="ShowSettingsButton"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Top"
+                      ToolTipService.ToolTip="Settings">
+            <FontIcon Glyph="&#xE713;" />
+        </ToggleButton>
+
+        <!--  Add Item Popup  -->
+        <Popup HorizontalOffset="{Binding LastClickPosition.X, UpdateSourceTrigger=PropertyChanged}"
+               IsLightDismissEnabled="True"
+               IsOpen="{Binding AddItemPopupIsOpen, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+               VerticalOffset="{Binding LastClickPosition.Y, UpdateSourceTrigger=PropertyChanged}">
+            <Border MinWidth="200"
+                    Background="{ThemeResource SolidBackgroundFillColorQuarternary}"
+                    CornerRadius="8">
+                <StackPanel Margin="8"
+                            Spacing="8">
+                    <ComboBox PlaceholderText="Select A Recipe"
+                              ItemsSource="{Binding RecipesCache}"
+                              SelectedItem="{Binding SelectedRecipe, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              HorizontalAlignment="Stretch"
+                              DisplayMemberPath="Name" />
+                    <Button Content="Production Line"
+                            HorizontalAlignment="Stretch"
+                            Command="{Binding CreateNewProductionLineCommand}" />
+                    <Button Content="Storage"
+                            HorizontalAlignment="Stretch"
+                            Command="{Binding AddStorageNodeCommand}" />
+                    <Button Content="Sink"
+                            HorizontalAlignment="Stretch"
+                            Command="{Binding AddSinkNodeCommand}" />
+                </StackPanel>
+            </Border>
+
+        </Popup>
+
+        <!--  Settings Popup  -->
+        <Popup HorizontalAlignment="Right"
+               VerticalAlignment="Top"
+               HorizontalOffset="-238"
+               IsLightDismissEnabled="True"
+               IsOpen="{Binding ElementName=ShowSettingsButton, Path=IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+               LightDismissOverlayMode="Off"
+               VerticalOffset="41">
+            <Border Width="238"
+                    Background="{ThemeResource SolidBackgroundFillColorQuarternary}"
+                    CornerRadius="8">
+                <Grid Margin="8"
+                      ColumnSpacing="8"
+                      RowSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Icons:"
+                               Grid.Row="0"
+                               VerticalAlignment="Center" />
+                    <ComboBox ItemsSource="{Binding IconSources}"
+                              SelectedItem="{Binding SelectedIconSource, Mode=TwoWay}"
+                              MinWidth="124"
+                              Grid.Column="1"
+                              HorizontalAlignment="Right" />
+
+                    <TextBlock Text="Snap To Grid:"
+                               Grid.Row="1"
+                               VerticalAlignment="Center" />
+                    <CheckBox IsChecked="{Binding SnapToGrid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              MinWidth="0"
+                              Grid.Column="1"
+                              Grid.Row="1"
+                              HorizontalAlignment="Right" />
+
+                    <TextBlock Text="Render Grid:"
+                               Grid.Row="2"
+                               VerticalAlignment="Center" />
+                    <CheckBox IsChecked="{Binding RenderGrid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              MinWidth="0"
+                              Grid.Column="1"
+                              Grid.Row="2"
+                              HorizontalAlignment="Right" />
+
+                    <TextBlock Text="Grid Size:"
+                               Grid.Row="3"
+                               VerticalAlignment="Center" />
+                    <Slider Value="{Binding GridSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            Minimum="5"
+                            Maximum="50"
+                            MinWidth="124"
+                            Grid.Column="1"
+                            Grid.Row="3"
+                            StepFrequency="5" />
+
+                </Grid>
+            </Border>
+        </Popup>
+
+    </Grid>
+</Page>

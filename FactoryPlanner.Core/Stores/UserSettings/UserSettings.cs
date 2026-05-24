@@ -1,0 +1,429 @@
+using CommunityToolkit.WinUI.Helpers;
+using FactoryPlanner.Core.Stores.UserSettings;
+using FactoryPlanner.MVVM.Models.ViewModels.Settings;
+using FactoryPlanner.Services;
+using FactoryPlanner.Services.Interfaces;
+using FactoryPlanner.Stores.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml.Controls;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Windows.UI.ViewManagement;
+
+namespace FactoryPlanner.Stores
+{
+    public class UserSettings : IUserSettings
+    {
+        /* How to add a setting:
+            * Create a private member and give it a default value
+            * Create a public property for it
+            * Add a property with the same name to IUserSettings
+            * Add a member to the SettingsDTO object
+            * Add that member to the ToDTO() and LoadFromDTO() functions
+            * Add a ViewModel to MVVM/Pages/SettingsPage/SettingsPageViewModel
+            * If the theme should be reapplied after changing the setting, add it to ThemeService.appearanceSettings
+        */
+
+        // Services & Stores
+        private readonly IProgramData programData;
+        private readonly IFileUtils fileUtils;
+        private readonly ILoggerService logger;
+        private readonly INotificationService notificationService;
+
+        // Fields
+
+        private bool _loaded = false;
+        private bool _isFirstLaunch = true;
+
+        private bool _logDebugMessages = false;
+        private int _maxLogs = 5;
+
+        private bool _darkMode = true;
+        private bool _rememberLayout = true;
+        private bool _openMaximised = false;
+        private int _defaultWidth = 1600;
+        private int _defaultHeight = 900;
+        private IThemeService.Backdrop _backdrop = IThemeService.Backdrop.Acrylic;
+        private string _accentColour = "";
+
+        private string _backupsFolder = "";
+        private int _maxBackups = 5;
+        private bool _automaticBackups = true;
+
+        private int _apiTimeout = 10;
+        private int _apiMaxRetries = 3;
+
+        private string _databaseHost = "localhost";
+        private int _databasePort = 5432;
+        private string _databaseName = "";
+        private string _databaseUsername = "";
+        private string _databasePassword = "";
+        private int _databaseConnectionTimeout = 30;
+
+        private bool _searchCaseSensitive = false;
+        private bool _searchSplitQuery = true;
+
+        private FactoryIconSource _iconSource = FactoryIconSource.Machine;
+        private bool _snapToGrid = true;
+        private bool _renderGrid = true;
+        private int _gridSize = 10;
+
+        private readonly object saveLock = new object();
+        private CancellationTokenSource? tokenSource;
+
+        private const int saveDebounceDelayMs = 200;
+
+        private record SettingsDTO(
+            bool IsFirstLaunch,
+            bool LogDebugMessages,
+            int MaxLogs,
+            bool DarkMode,
+            bool RememberLayout,
+            bool OpenMaximised,
+            int DefaultWidth,
+            int DefaultHeight,
+            IThemeService.Backdrop Backdrop,
+            string AccentColour,
+            string BackupsFolder,
+            int MaxBackups,
+            bool AutomatedBackups,
+            int ApiTimeout,
+            int ApiMaxRetries,
+            string DatabaseHost,
+            int DatabasePort,
+            string DatabaseName,
+            string DatabaseUsername,
+            string DatabasePassword,
+            int DatabaseConnectionTimeout,
+            bool SearchCaseSensitive,
+            bool SearchSplitQuery,
+            FactoryIconSource IconSource,
+            bool SnapToGrid,
+            bool RenderGrid,
+            int GridSize
+        );
+
+        // Properties
+
+        public bool Loaded {
+            get => _loaded;
+            private set {
+                if (_loaded == value) return;
+                _loaded = value;
+                if (value) SettingsLoaded?.Invoke();
+            }
+        }
+
+        public bool IsFirstLaunch {
+            get => _isFirstLaunch;
+            set => SetSetting(ref _isFirstLaunch, value);
+        }
+
+        public bool LogDebugMessages {
+            get => _logDebugMessages;
+            set => SetSetting(ref _logDebugMessages, value);
+        }
+
+        public int MaxLogs {
+            get => _maxLogs;
+            set => SetSetting(ref _maxLogs, value);
+        }
+
+        public bool DarkMode {
+            get => _darkMode;
+            set => SetSetting(ref _darkMode, value);
+        }
+
+        public bool RememberLayout {
+            get => _rememberLayout;
+            set => SetSetting(ref _rememberLayout, value);
+        }
+
+        public bool OpenMaximised {
+            get => _openMaximised;
+            set => SetSetting(ref _openMaximised, value);
+        }
+
+        public int DefaultWidth {
+            get => _defaultWidth;
+            set => SetSetting(ref _defaultWidth, value);
+        }
+
+        public int DefaultHeight {
+            get => _defaultHeight;
+            set => SetSetting(ref _defaultHeight, value);
+        }
+
+        public IThemeService.Backdrop Backdrop {
+            get => _backdrop;
+            set => SetSetting(ref _backdrop, value);
+        }
+
+        public string AccentColour {
+            get => _accentColour;
+            set => SetSetting(ref _accentColour, value);
+        }
+
+        public string BackupsFolder {
+            get => _backupsFolder;
+            set => SetSetting(ref _backupsFolder, value);
+        }
+
+        public int MaxBackups {
+            get => _maxBackups;
+            set => SetSetting(ref _maxBackups, value);
+        }
+
+        public bool AutomaticBackups {
+            get => _automaticBackups;
+            set => SetSetting(ref _automaticBackups, value);
+        }
+
+        public int ApiTimeout {
+            get => _apiTimeout;
+            set => SetSetting(ref _apiTimeout, value);
+        }
+
+        public int ApiMaxRetries {
+            get => _apiMaxRetries;
+            set => SetSetting(ref _apiMaxRetries, value);
+        }
+
+        public string DatabaseHost {
+            get => _databaseHost;
+            set => SetSetting(ref _databaseHost, value);
+        }
+
+        public int DatabasePort {
+            get => _databasePort;
+            set => SetSetting(ref _databasePort, value);
+        }
+
+        public string DatabaseName {
+            get => _databaseName;
+            set => SetSetting(ref _databaseName, value);
+        }
+
+        public string DatabaseUsername {
+            get => _databaseUsername;
+            set => SetSetting(ref _databaseUsername, value);
+        }
+
+        public string DatabasePassword {
+            get => _databasePassword;
+            set => SetSetting(ref _databasePassword, value);
+        }
+
+        public int DatabaseConnectionTimeout {
+            get => _databaseConnectionTimeout;
+            set => SetSetting(ref _databaseConnectionTimeout, value);
+        }
+
+        public bool SearchCaseSensitive {
+            get => _searchCaseSensitive;
+            set => SetSetting(ref _searchCaseSensitive, value);
+        }
+
+        public bool SearchSplitQuery {
+            get => _searchSplitQuery;
+            set => SetSetting(ref _searchSplitQuery, value);
+        }
+
+        public FactoryIconSource IconSource {
+            get => _iconSource;
+            set => SetSetting(ref _iconSource, value);
+        }
+
+        public bool SnapToGrid {
+            get => _snapToGrid;
+            set => SetSetting(ref _snapToGrid, value);
+        }
+
+        public bool RenderGrid {
+            get => _renderGrid;
+            set => SetSetting(ref _renderGrid, value);
+        }
+
+        public int GridSize {
+            get => _gridSize;
+            set => SetSetting(ref _gridSize, value);
+        }
+
+        // Constructors
+
+        public UserSettings(IServiceProvider serviceProvider) {
+            programData = serviceProvider.GetRequiredService<IProgramData>();
+            fileUtils = serviceProvider.GetRequiredService<IFileUtils>();
+            logger = serviceProvider.GetRequiredService<ILoggerService>();
+            notificationService = serviceProvider.GetRequiredService<INotificationService>();
+        }
+
+        // Events
+        public event Action? SettingsLoaded;
+        public event Action<string>? SettingChanged;
+
+        // Public Functions
+
+        public async Task Load() {
+            try {
+                FileReadResult result = await fileUtils.TryReadFileAsync(programData.FilePaths.SettingsFile);
+                if (!result.Success) {
+                    logger.LogError($"Failed to load Settings.json - '{result.ErrorMessage}'");
+                    Loaded = true;
+
+                    if (File.Exists(programData.FilePaths.SettingsFile)) {
+                        notificationService.Notify(InfoBarSeverity.Error, $"Failed to load settings. Please close {programData.ProgramName} and contact the developer.");
+                        Loaded = false;
+                    }
+
+                    return;
+                }
+
+                SettingsDTO? dto = JsonConvert.DeserializeObject<SettingsDTO>(result.Content ?? "{}");
+                if (dto == null) {
+                    string error = $"Parsed Settings.json is null";
+                    Debug.Assert(false, error);
+                    logger.LogError(error);
+                    Loaded = true;
+                    return;
+                }
+
+                LoadFromDTO(dto);
+                Loaded = true;
+                logger.LogInfo("Loaded UserSettings");
+            }
+            catch (Exception e) {
+                Debug.Assert(false, $"UserSettings.Load failed: '{e.Message}'");
+                Loaded = true;
+            }
+        }
+
+        public void RestoreDefaults() {
+            LogDebugMessages = true;
+            MaxLogs = 5;
+            OpenMaximised = false;
+            MaxBackups = 5;
+            // Don't restore BackupsFolder and AutomaticBackups
+        }
+
+        // Private Functions
+
+        private void SetSetting<T>(ref T field, T value, [CallerMemberName] string name = "") {
+            if (EqualityComparer<T>.Default.Equals(field, value)) return;
+            field = value;
+            if (Loaded) DebounceSave();
+            SettingChanged?.Invoke(name);
+        }
+
+        private void DebounceSave() {
+            try {
+                lock (saveLock) {
+                    tokenSource?.Cancel();
+                    tokenSource = new CancellationTokenSource();
+                    CancellationToken token = tokenSource.Token;
+
+                    _ = Task.Run(async () => {
+                        try {
+                            await Task.Delay(saveDebounceDelayMs, token);
+                            if (!token.IsCancellationRequested) await SaveAsync();
+                        }
+                        catch (TaskCanceledException) { } // Expected
+                        catch (Exception e) {
+                            Debug.Assert(false, $"UserSettings.DebounceSave failed: '{e.Message}'");
+                        }
+                    });
+                }
+            }
+            catch (Exception e) {
+                Debug.Assert(false, $"UserSettings.DebounceSave outer failed: '{e.Message}'");
+            }
+        }
+
+        private async Task SaveAsync() {
+            try {
+                string json = JsonConvert.SerializeObject(ToDTO(), Formatting.Indented);
+                FileWriteResult result = await fileUtils.TryWriteFileAsync(programData.FilePaths.SettingsFile, json);
+                if (result.Success) {
+                    logger.LogInfo("Saved UserSettings");
+                }
+                else {
+                    string error = $"Failed to save UserSettings - '{result.ErrorMessage}'";
+                    logger.LogError(error);
+                    notificationService.Notify(InfoBarSeverity.Error, error);
+                }
+            }
+            catch (Exception e) {
+                Debug.Assert(false, $"UserSettings.SaveAsync failed: '{e.Message}'");
+            }
+        }
+
+        private SettingsDTO ToDTO() => new SettingsDTO(
+            _isFirstLaunch,
+            _logDebugMessages,
+            _maxLogs,
+            _darkMode,
+            _rememberLayout,
+            _openMaximised,
+            _defaultWidth,
+            _defaultHeight,
+            _backdrop,
+            _accentColour,
+            _backupsFolder,
+            _maxBackups,
+            _automaticBackups,
+            _apiTimeout,
+            _apiMaxRetries,
+            _databaseHost,
+            _databasePort,
+            _databaseName,
+            _databaseUsername,
+            _databasePassword,
+            _databaseConnectionTimeout,
+            _searchCaseSensitive,
+            _searchSplitQuery,
+            _iconSource,
+            _snapToGrid,
+            _renderGrid,
+            _gridSize
+        );
+
+        private void LoadFromDTO(SettingsDTO dto) {
+            _isFirstLaunch = dto.IsFirstLaunch;
+            _logDebugMessages = dto.LogDebugMessages;
+            _maxLogs = dto.MaxLogs;
+            _darkMode = dto.DarkMode;
+            _rememberLayout = dto.RememberLayout;
+            _openMaximised = dto.OpenMaximised;
+            _defaultWidth = dto.DefaultWidth;
+            _defaultHeight = dto.DefaultHeight;
+            _backdrop = dto.Backdrop;
+            _accentColour = dto.AccentColour;
+            _backupsFolder = dto.BackupsFolder;
+            _maxBackups = dto.MaxBackups;
+            _automaticBackups = dto.AutomatedBackups;
+            _apiTimeout = dto.ApiTimeout;
+            _apiMaxRetries = dto.ApiMaxRetries;
+            _databaseHost = dto.DatabaseHost;
+            _databasePort = dto.DatabasePort;
+            _databaseName = dto.DatabaseName;
+            _databaseUsername = dto.DatabaseUsername;
+            _databasePassword = dto.DatabasePassword;
+            _databaseConnectionTimeout = dto.DatabaseConnectionTimeout;
+            _searchCaseSensitive = dto.SearchCaseSensitive;
+            _searchSplitQuery = dto.SearchSplitQuery;
+            _iconSource = dto.IconSource;
+            _snapToGrid = dto.SnapToGrid;
+            _renderGrid = dto.RenderGrid;
+            _gridSize = dto.GridSize;
+        }
+    }
+}
