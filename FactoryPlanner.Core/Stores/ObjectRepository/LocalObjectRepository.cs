@@ -339,7 +339,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
             }
         }
 
-        public OperationResult Clear() {
+        public virtual OperationResult Clear() {
             try {
                 using SqliteConnection connection = new SqliteConnection($"Data Source={databasePath}");
                 connection.Open();

@@ -116,6 +116,7 @@ namespace FactoryPlanner
             services.AddSingleton<IProgramData, ProgramData>();
             services.AddSingleton<IUserSettings, UserSettings>();
 
+            services.AddSingleton<IGameManager, GameManager>();
             services.AddSingleton<IItemManager, ItemManager>();
             services.AddSingleton<IRecipeManager, RecipeManager>();
             services.AddSingleton<IMachineManager, MachineManager>();

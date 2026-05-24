@@ -11,6 +11,7 @@ namespace FactoryPlanner.Core.Stores
 {
     public class ItemManager : LocalObjectRepository<int, Item>, IItemManager
     {
+        // ToDo: Update to work more like GameManager and related classes
         // Constructors
         public ItemManager(IServiceProvider serviceProvider) : base(serviceProvider) { }
 

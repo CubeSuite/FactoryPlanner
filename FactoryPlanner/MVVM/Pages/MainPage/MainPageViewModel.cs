@@ -34,11 +34,6 @@ namespace FactoryPlanner.MVVM.Pages
             backupService.BackupDeleted += OnBackupCreatedOrDeleted;
 
             Notifications = new ObservableCollection<NotificationViewModel>();
-
-            // ToDo: Remove debug code
-            IItemManager itemManager = serviceProvider.GetRequiredService<IItemManager>();
-            IRecipeManager recipeManager = serviceProvider.GetRequiredService<IRecipeManager>();
-
             CheckForBackups();
         }
 

@@ -8,26 +8,36 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-using WinRT;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace FactoryPlanner.MVVM.Pages
+namespace FactoryPlanner.MVVM.Views
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class HomePage : Page
+    public sealed partial class LocalGameView : UserControl
     {
-        public HomePage() {
+        public LocalGameView() {
             InitializeComponent();
+        }
+
+        // Listeners
+
+        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args) {
+            if (args.NewValue is GameViewModel game) game.Deleted += OnGameDeleted;
+        }
+
+        private void OnGameDeleted(GameViewModel model) {
+            ConfirmDeleteFlyout.Hide();
+        }
+
+        private void OnNameBoxLostFocus(object sender, RoutedEventArgs e) {
+            if (sender is not TextBox nameBox || nameBox.DataContext is not GameViewModel game) return;
+            game.TrySave();
         }
     }
 }
