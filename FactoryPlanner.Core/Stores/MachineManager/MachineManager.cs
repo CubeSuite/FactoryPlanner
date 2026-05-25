@@ -59,7 +59,7 @@ namespace FactoryPlanner.Core.Stores
         }
 
         public OperationResult TryUpdate(Machine machine) {
-            OperationResult result = database.TryAdd(machine.ID, machine);
+            OperationResult result = database.TryUpdate(machine.ID, machine);
             if (!result) return result;
 
             return TryUpdate(machine.ID, machine);

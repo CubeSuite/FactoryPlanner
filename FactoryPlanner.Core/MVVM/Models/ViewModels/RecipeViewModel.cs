@@ -113,7 +113,7 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             recipeManager = serviceProvider.GetRequiredService<IRecipeManager>();
             dialogService = serviceProvider.GetRequiredService<IDialogService>();
 
-            recipeManager.TryGet(recipeId, out _recipe);
+            recipeManager.TryGet(recipeId, out _recipe); // ToDo: Handle recipe being null
 
             InputEntries = new ObservableCollection<IngredientEntry>();
             OutputEntries = new ObservableCollection<IngredientEntry>();

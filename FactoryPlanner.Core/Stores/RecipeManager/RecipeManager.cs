@@ -46,7 +46,7 @@ namespace FactoryPlanner.Core.Stores
         }
 
         public Recipe? GetLatest() {
-            return Values.Last();
+            return Count == 0 ? null : Values.Last();
         }
 
         // Base Class Wrappers
