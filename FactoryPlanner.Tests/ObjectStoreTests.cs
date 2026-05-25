@@ -1000,6 +1000,7 @@ namespace FactoryPlanner.Tests
         }
 
         [Fact]
+        [Trait("Category", "RequiresPostgreSQL")]
         public void RemoteObjectRepository_ThrowsNotSupportedException_ForUnsupportedTypes() {
             // Act & Assert
             var exception = Assert.Throws<NotSupportedException>(() => {
