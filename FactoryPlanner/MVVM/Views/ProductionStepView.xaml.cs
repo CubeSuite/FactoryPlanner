@@ -1,3 +1,4 @@
+using FactoryPlanner.Core.MVVM.Models;
 using FactoryPlanner.Core.MVVM.Models.ViewModels;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -35,6 +36,10 @@ namespace FactoryPlanner.MVVM.Views
             PointerMoved += OnPointerMoved;
             PointerReleased += OnPointerReleased;
         }
+
+        // Events
+
+        public event EventHandler<ProductionStepPortPressedEventArgs>? PortPressed;
 
         // Listeners
 
@@ -75,6 +80,46 @@ namespace FactoryPlanner.MVVM.Views
             isDragging = false;
             ReleasePointerCapture(e.Pointer);
             e.Handled = true;
+        }
+
+        private void OnInputPointerPressed(object sender, PointerRoutedEventArgs e) {
+            RaiseProductionStepPortPressed(sender, PortType.Input);
+            e.Handled = true;
+        }
+
+        private void OnOutputPointerPressed(object sender, PointerRoutedEventArgs e) {
+            RaiseProductionStepPortPressed(sender, PortType.Output);
+            e.Handled = true;
+        }
+
+        private void RaiseProductionStepPortPressed(object sender, PortType portType) {
+            if (sender is not UIElement element || DataContext is not ProductionStepViewModel stepVM) return;
+
+            int portIndex = portType switch {
+                PortType.Input => InputsContainer.GetElementIndex(element),
+                PortType.Output => OutputsContainer.GetElementIndex(element),
+                _ => -1
+            };
+
+            if (portIndex < 0) return;
+
+            PortPressed?.Invoke(this, new ProductionStepPortPressedEventArgs(stepVM, portType, portIndex));
+        }
+    }
+
+    public class ProductionStepPortPressedEventArgs : EventArgs 
+    {
+        // Properties
+        public ProductionStepViewModel ProductionStepVM { get; set; }
+        public PortType PortType { get; set; }
+        public int PortIndex { get; set; }
+
+        // Constructors
+
+        public ProductionStepPortPressedEventArgs(ProductionStepViewModel productionStep, PortType portType, int portIndex) {
+            ProductionStepVM = productionStep;
+            PortType = portType;
+            PortIndex = portIndex;
         }
     }
 }

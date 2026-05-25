@@ -9,19 +9,24 @@ namespace FactoryPlanner.Core.MVVM.Models
     public class Connection
     {
         // Fields
-        private List<ProductionStep> _inputs;
-        private List<ProductionStep> _outputs;
+        private ProductionPort _input;
+        private ProductionPort _output;
+        private double _quantity;
 
         // Properties
-
-        public List<ProductionStep> Inputs => _inputs;
-        public List<ProductionStep> Outputs => _outputs;
+        public ProductionPort Input => _input;
+        public ProductionPort Output => _output;
+        
+        public double Quantity {
+            get => _quantity;
+            set => _quantity = value;
+        }
 
         // Constructors
 
-        public Connection() {
-            _inputs = new List<ProductionStep>();
-            _outputs = new List<ProductionStep>();
+        public Connection(ProductionPort input, ProductionPort output) {
+            _input = input;
+            _output = output;
         }
     }
 }

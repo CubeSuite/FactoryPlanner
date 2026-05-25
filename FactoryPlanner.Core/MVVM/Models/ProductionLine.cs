@@ -30,5 +30,11 @@ namespace FactoryPlanner.Core.MVVM.Models
             _steps = new List<ProductionStep>();
             _connections = new List<Connection>();
         }
+
+        // Public Functions
+
+        public IEnumerable<Connection> GetConnectionsToPort(ProductionPort port) {
+            return Connections.Where(connection => connection.Input == port || connection.Output == port);
+        }
     }
 }

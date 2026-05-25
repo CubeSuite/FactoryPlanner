@@ -4,9 +4,11 @@ using FactoryPlanner.Core.MVVM.Models;
 using FactoryPlanner.Core.MVVM.Models.ViewModels;
 using FactoryPlanner.Core.Stores;
 using FactoryPlanner.Core.Stores.UserSettings;
+using FactoryPlanner.MVVM.Views;
 using FactoryPlanner.Services.Interfaces;
 using FactoryPlanner.Stores.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,43 +26,45 @@ namespace FactoryPlanner.MVVM.Pages
         // Services & Stores
         private readonly IServiceProvider serviceProvider;
         private readonly IRecipeManager recipeManager;
-        private readonly IUserSettings userSettings;
+        private readonly IUserSettings _userSettings;
 
         // Fields
         private Dictionary<string, FactoryIconSource> iconSourceMap;
 
         // Properties
-        public ProductionLineViewModel ProductionLine { get; set; }
+        public IUserSettings UserSettings => _userSettings;
+
+        public ProductionLineViewModel ProductionLineVM { get; set; }
 
         [ObservableProperty]
         public partial string SelectedIconSource { get; set; }
         public string[] IconSources { get; }
 
         public bool SnapToGrid {
-            get => userSettings.SnapToGrid;
+            get => _userSettings.SnapToGrid;
             set {
-                if (userSettings.SnapToGrid != value) {
-                    userSettings.SnapToGrid = value;
+                if (_userSettings.SnapToGrid != value) {
+                    _userSettings.SnapToGrid = value;
                     OnPropertyChanged();
                 }
             }
         }
 
         public bool RenderGrid {
-            get => userSettings.RenderGrid;
+            get => _userSettings.RenderGrid;
             set {
-                if (userSettings.RenderGrid != value) {
-                    userSettings.RenderGrid = value;
+                if (_userSettings.RenderGrid != value) {
+                    _userSettings.RenderGrid = value;
                     OnPropertyChanged();
                 }
             }
         }
 
         public int GridSize {
-            get => userSettings.GridSize;
+            get => _userSettings.GridSize;
             set {
-                if (userSettings.GridSize != value) {
-                    userSettings.GridSize = value;
+                if (_userSettings.GridSize != value) {
+                    _userSettings.GridSize = value;
                     OnPropertyChanged();
                 }
             }
@@ -84,23 +88,23 @@ namespace FactoryPlanner.MVVM.Pages
         public FactoryPlannerPageViewModel(IServiceProvider serviceProvider) {
             this.serviceProvider = serviceProvider;
             recipeManager = serviceProvider.GetRequiredService<IRecipeManager>();
-            userSettings = serviceProvider.GetRequiredService<IUserSettings>();
+            _userSettings = serviceProvider.GetRequiredService<IUserSettings>();
 
             iconSourceMap = EnumExtensions.GetValuesWithDescriptions<FactoryIconSource>();
 
             IconSources = iconSourceMap.Keys.ToArray();
-            SelectedIconSource = userSettings.IconSource.GetDescription();
+            SelectedIconSource = _userSettings.IconSource.GetDescription();
             SelectedRecipe = null;
 
             // ToDo: Load root production line
-            ProductionLine = new ProductionLineViewModel(new ProductionLine());
+            ProductionLineVM = new ProductionLineViewModel(new ProductionLine());
         }
 
         // Listeners
 
         partial void OnSelectedIconSourceChanged(string value) {
             if (iconSourceMap.TryGetValue(value, out FactoryIconSource iconSource)) {
-                userSettings.IconSource = iconSource;
+                _userSettings.IconSource = iconSource;
             }
             else {
                 Debug.Assert(false, $"iconSourceMap doesn't contain key '{value}'");
@@ -110,7 +114,7 @@ namespace FactoryPlanner.MVVM.Pages
         partial void OnSelectedRecipeChanged(Recipe? value) {
             if (value == null) return;
             ProductionStep step = new ProductionStep(value, LastCanvasClickPosition);
-            ProductionLine.Steps.Add(new ProductionStepViewModel(step, serviceProvider));
+            ProductionLineVM.Steps.Add(new ProductionStepViewModel(step, serviceProvider));
             AddStepPopupIsOpen = false;
 
             // Defer resetting to avoid binding timing issues
@@ -151,5 +155,24 @@ namespace FactoryPlanner.MVVM.Pages
 
         }
 
+        // Public Functions
+
+        public void FormNewConnection(ProductionStepPortPressedEventArgs start, ProductionStepPortPressedEventArgs end) {
+            ProductionPort input;
+            ProductionPort output;
+
+            if (start.PortType == PortType.Input) {
+                input = new ProductionPort(end.ProductionStepVM.ProductionStep, end.PortType, end.PortIndex);
+                output = new ProductionPort(start.ProductionStepVM.ProductionStep, start.PortType, start.PortIndex);
+            }
+            else {
+                input = new ProductionPort(start.ProductionStepVM.ProductionStep, start.PortType, start.PortIndex);
+                output = new ProductionPort(end.ProductionStepVM.ProductionStep, end.PortType, end.PortIndex);
+            }
+
+            Connection connection = new Connection(input, output);
+            ConnectionViewModel connectionVM = new ConnectionViewModel(connection);
+            ProductionLineVM.Connections.Add(connectionVM);
+        }
     }
 }

@@ -22,9 +22,6 @@
                 <RowDefinition />
             </Grid.RowDefinitions>
 
-            <!--  Inptus  -->
-            <ItemsRepeater x:Name="InputsContainer"
-                           ItemsSource="{Binding Recipe.Inputs}" />
 
             <TextBlock Grid.Column="1"
                        HorizontalAlignment="Center">
@@ -41,6 +38,51 @@
                    Grid.Column="1"
                    Grid.Row="1" />
 
+            <!--  Inputs  -->
+            <ItemsRepeater x:Name="InputsContainer"
+                           ItemsSource="{Binding Recipe.Inputs.Keys}"
+                           Grid.RowSpan="2"
+                           VerticalAlignment="Center">
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
+                                BorderBrush="DeepSkyBlue"
+                                BorderThickness="2"
+                                CornerRadius="15"
+                                Width="30"
+                                Height="30"
+                                PointerPressed="OnInputPointerPressed">
+                            <Image Source="{Binding IconPath}"
+                                   Margin="2"
+                                   IsHitTestVisible="False" />
+                        </Border>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+
+
+            <!--  Outputs  -->
+            <ItemsRepeater x:Name="OutputsContainer"
+                           ItemsSource="{Binding Recipe.Outputs.Keys}"
+                           Grid.Column="2"
+                           Grid.RowSpan="2"
+                           VerticalAlignment="Center">
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
+                                BorderBrush="Orange"
+                                BorderThickness="2"
+                                CornerRadius="15"
+                                Width="30"
+                                Height="30"
+                                PointerPressed="OnOutputPointerPressed">
+                            <Image Source="{Binding IconPath}"
+                                   Margin="2"
+                                   IsHitTestVisible="False" />
+                        </Border>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
         </Grid>
     </Border>
 </UserControl>
