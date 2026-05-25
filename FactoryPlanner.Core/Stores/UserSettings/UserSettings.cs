@@ -77,6 +77,8 @@ namespace FactoryPlanner.Stores
         private bool _renderGrid = true;
         private int _gridSize = 10;
 
+        private int _activeGame = 0;
+
         private readonly object saveLock = new object();
         private CancellationTokenSource? tokenSource;
 
@@ -109,7 +111,8 @@ namespace FactoryPlanner.Stores
             FactoryIconSource IconSource,
             bool SnapToGrid,
             bool RenderGrid,
-            int GridSize
+            int GridSize,
+            int ActiveGame
         );
 
         // Properties
@@ -258,6 +261,11 @@ namespace FactoryPlanner.Stores
             set => SetSetting(ref _gridSize, value);
         }
 
+        public int ActiveGame {
+            get => _activeGame;
+            set => SetSetting(ref _activeGame, value);
+        }
+
         // Constructors
 
         public UserSettings(IServiceProvider serviceProvider) {
@@ -393,7 +401,8 @@ namespace FactoryPlanner.Stores
             _iconSource,
             _snapToGrid,
             _renderGrid,
-            _gridSize
+            _gridSize,
+            _activeGame
         );
 
         private void LoadFromDTO(SettingsDTO dto) {
@@ -424,6 +433,7 @@ namespace FactoryPlanner.Stores
             _snapToGrid = dto.SnapToGrid;
             _renderGrid = dto.RenderGrid;
             _gridSize = dto.GridSize;
+            _activeGame = dto.ActiveGame;
         }
     }
 }

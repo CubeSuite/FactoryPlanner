@@ -329,7 +329,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
             }
         }
 
-        public OperationResult Clear() {
+        public virtual OperationResult Clear() {
             try {
                 using NpgsqlConnection connection = new NpgsqlConnection(connectionString);
                 connection.Open();

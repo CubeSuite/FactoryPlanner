@@ -1,6 +1,7 @@
 using FactoryPlanner.Core.Stores;
 using FactoryPlanner.Core.Stores.ObjectCache;
 using FactoryPlanner.Core.Stores.ObjectStore;
+using FactoryPlanner.MVVM.Models;
 using FactoryPlanner.Services;
 using FactoryPlanner.Services.Interfaces;
 using FactoryPlanner.Stores.Interfaces;
@@ -941,7 +942,7 @@ namespace FactoryPlanner.Tests
     public class UnsupportedTestItem
     {
         public int Value { get; set; }
-        public System.Collections.Generic.Dictionary<string, string> UnsupportedProperty { get; set; } // Not supported
+        public LogEntry UnsupportedProperty { get; set; } // Not supported
     }
 
     // Tests for type validation in object repositories
@@ -951,6 +952,7 @@ namespace FactoryPlanner.Tests
         private readonly Mock<IServiceProvider> mockServiceProvider;
         private readonly Mock<IFilePaths> mockFilePaths;
         private readonly Mock<IUserSettings> mockUserSettings;
+        private readonly Mock<IProgramData> mockProgramData;
         private readonly string testDatabasePath;
 
         public ObjectRepositoryTypeValidationTests() {
@@ -958,16 +960,18 @@ namespace FactoryPlanner.Tests
             mockServiceProvider = new Mock<IServiceProvider>();
             mockFilePaths = new Mock<IFilePaths>();
             mockUserSettings = new Mock<IUserSettings>();
+            mockProgramData = new Mock<IProgramData>();
 
             testDatabasePath = Path.Combine(Path.GetTempPath(), $"validation_test_{Guid.NewGuid():N}.db");
 
-            mockFilePaths.Setup(x => x.Database).Returns(testDatabasePath);
             mockUserSettings.Setup(x => x.DatabaseHost).Returns("localhost");
             mockUserSettings.Setup(x => x.DatabasePort).Returns(5432);
             mockUserSettings.Setup(x => x.DatabaseName).Returns("test");
             mockUserSettings.Setup(x => x.DatabaseUsername).Returns("test");
             mockUserSettings.Setup(x => x.DatabasePassword).Returns("test");
             mockUserSettings.Setup(x => x.DatabaseConnectionTimeout).Returns(30);
+            mockProgramData.Setup(x => x.FilePaths).Returns(mockFilePaths.Object);
+            mockFilePaths.Setup(x => x.Database).Returns(testDatabasePath);
 
             mockServiceProvider
                 .Setup(x => x.GetService(typeof(ILoggerService)))
@@ -978,12 +982,15 @@ namespace FactoryPlanner.Tests
             mockServiceProvider
                 .Setup(x => x.GetService(typeof(IUserSettings)))
                 .Returns(mockUserSettings.Object);
+            mockServiceProvider
+                .Setup(x => x.GetService(typeof(IProgramData)))
+                .Returns(mockProgramData.Object);
         }
 
         [Fact]
         public void LocalObjectRepository_ThrowsNotSupportedException_ForUnsupportedTypes() {
             // Act & Assert
-            var exception = Assert.Throws<NotSupportedException>(() => {
+            NotSupportedException exception = Assert.Throws<NotSupportedException>(() => {
                 new LocalObjectRepository<string, UnsupportedTestItem>(mockServiceProvider.Object);
             });
 
@@ -993,6 +1000,7 @@ namespace FactoryPlanner.Tests
         }
 
         [Fact]
+        [Trait("Category", "RequiresPostgreSQL")]
         public void RemoteObjectRepository_ThrowsNotSupportedException_ForUnsupportedTypes() {
             // Act & Assert
             var exception = Assert.Throws<NotSupportedException>(() => {

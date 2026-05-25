@@ -26,6 +26,7 @@
     <None Remove="MVVM\Pages\RecipesPage\RecipesPage.xaml" />
     <None Remove="MVVM\Pages\SettingsPage.xaml" />
     <None Remove="MVVM\Views\CustomTitleBar\CustomTitleBar.xaml" />
+    <None Remove="MVVM\Views\LocalGameView.xaml" />
     <None Remove="MVVM\Views\MachineView.xaml" />
     <None Remove="MVVM\Views\MessageView\MessageView.xaml" />
     <None Remove="MVVM\Views\ItemView\ItemView.xaml" />
@@ -113,6 +114,9 @@
     <None Update="MVVM\Views\ItemView\ItemView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </None>
+    <Page Update="MVVM\Views\LocalGameView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Update="MVVM\Views\ProductionStepView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

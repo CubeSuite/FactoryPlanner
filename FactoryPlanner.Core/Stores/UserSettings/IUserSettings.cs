@@ -48,6 +48,8 @@ namespace FactoryPlanner.Stores.Interfaces
         bool RenderGrid { get; set; }
         int GridSize { get; set; }
 
+        int ActiveGame { get; set; }
+
         // Events
         event Action? SettingsLoaded;
         event Action<string>? SettingChanged;
