@@ -20,7 +20,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
         // Services & Stores
         private readonly ILoggerService logger;
         private readonly IUserSettings userSettings;
-        private readonly string tableName;
+        private readonly string _tableName;
         private readonly PropertyInfo[] properties;
         private readonly string connectionString;
 
@@ -33,7 +33,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     connection.Open();
 
                     using NpgsqlCommand command = connection.CreateCommand();
-                    command.CommandText = $"SELECT * FROM {tableName}";
+                    command.CommandText = $"SELECT * FROM {_tableName}";
 
                     using NpgsqlDataReader reader = command.ExecuteReader();
                     while (reader.Read()) {
@@ -58,7 +58,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     connection.Open();
 
                     using NpgsqlCommand command = connection.CreateCommand();
-                    command.CommandText = $"SELECT \"Key\" FROM {tableName}";
+                    command.CommandText = $"SELECT \"Key\" FROM {_tableName}";
 
                     using NpgsqlDataReader reader = command.ExecuteReader();
                     while (reader.Read()) {
@@ -81,7 +81,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     connection.Open();
 
                     using NpgsqlCommand command = connection.CreateCommand();
-                    command.CommandText = $"SELECT COUNT(*) FROM {tableName}";
+                    command.CommandText = $"SELECT COUNT(*) FROM {_tableName}";
 
                     object result = command.ExecuteScalar();
                     return Convert.ToInt32(result);
@@ -93,12 +93,14 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
             }
         }
 
+        public string TableName => _tableName;
+
         // Constructors
         public RemoteObjectRepository(IServiceProvider serviceProvider) {
             logger = serviceProvider.GetRequiredService<ILoggerService>();
             userSettings = serviceProvider.GetRequiredService<IUserSettings>();
 
-            tableName = $"\"{typeof(V).Name}s\"";
+            _tableName = $"\"{typeof(V).Name}s\"";
             properties = typeof(V).GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(p => p.CanRead && p.CanWrite)
                 .ToArray();
@@ -130,7 +132,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     parameterIndex++;
                 }
 
-                command.CommandText = $"INSERT INTO {tableName} ({columns}) VALUES ({placeholders})";
+                command.CommandText = $"INSERT INTO {_tableName} ({columns}) VALUES ({placeholders})";
                 command.Parameters.AddWithValue(keyString);
 
                 foreach (PropertyInfo prop in properties) {
@@ -179,7 +181,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     parameterIndex++;
                 }
 
-                command.CommandText = $"UPDATE {tableName} SET {setClause} WHERE \"Key\" = ${parameterIndex}";
+                command.CommandText = $"UPDATE {_tableName} SET {setClause} WHERE \"Key\" = ${parameterIndex}";
 
                 foreach (PropertyInfo prop in properties) {
                     object value = prop.GetValue(instance);
@@ -219,7 +221,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                 connection.Open();
 
                 using NpgsqlCommand command = connection.CreateCommand();
-                command.CommandText = $"DELETE FROM {tableName} WHERE \"Key\" = $1";
+                command.CommandText = $"DELETE FROM {_tableName} WHERE \"Key\" = $1";
                 command.Parameters.AddWithValue(keyString);
 
                 int rowsAffected = command.ExecuteNonQuery();
@@ -249,7 +251,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                 connection.Open();
 
                 using NpgsqlCommand command = connection.CreateCommand();
-                command.CommandText = $"SELECT * FROM {tableName} WHERE \"Key\" = $1";
+                command.CommandText = $"SELECT * FROM {_tableName} WHERE \"Key\" = $1";
                 command.Parameters.AddWithValue(keyString);
 
                 using NpgsqlDataReader reader = command.ExecuteReader();
@@ -289,7 +291,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     command.Parameters.AddWithValue(ConvertKeyToString(keys[i]));
                 }
 
-                command.CommandText = $"SELECT * FROM {tableName} WHERE \"Key\" IN ({string.Join(", ", parameterNames)})";
+                command.CommandText = $"SELECT * FROM {_tableName} WHERE \"Key\" IN ({string.Join(", ", parameterNames)})";
 
                 using NpgsqlDataReader reader = command.ExecuteReader();
                 while (reader.Read()) {
@@ -317,7 +319,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                 connection.Open();
 
                 using NpgsqlCommand command = connection.CreateCommand();
-                command.CommandText = $"SELECT COUNT(*) FROM {tableName} WHERE \"Key\" = $1";
+                command.CommandText = $"SELECT COUNT(*) FROM {_tableName} WHERE \"Key\" = $1";
                 command.Parameters.AddWithValue(keyString);
 
                 object result = command.ExecuteScalar();
@@ -335,7 +337,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                 connection.Open();
 
                 using NpgsqlCommand command = connection.CreateCommand();
-                command.CommandText = $"DELETE FROM {tableName}";
+                command.CommandText = $"DELETE FROM {_tableName}";
                 command.ExecuteNonQuery();
 
                 return new OperationResult(true, null, false);
@@ -410,7 +412,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                 using NpgsqlCommand command = connection.CreateCommand();
 
                 StringBuilder createTableSql = new StringBuilder();
-                createTableSql.AppendLine($"CREATE TABLE IF NOT EXISTS {tableName} (");
+                createTableSql.AppendLine($"CREATE TABLE IF NOT EXISTS {_tableName} (");
                 createTableSql.AppendLine("    \"Key\" TEXT PRIMARY KEY");
 
                 foreach (PropertyInfo prop in properties) {

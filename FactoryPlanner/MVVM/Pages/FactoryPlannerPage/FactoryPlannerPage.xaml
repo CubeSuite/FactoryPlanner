@@ -15,7 +15,7 @@
           PointerWheelChanged="OnCanvasPointerWheelChanged">
 
         <Canvas x:Name="GridCanvas"
-                Background="Transparent" /> 
+                Background="Transparent" />
 
         <Canvas x:Name="MainCanvas"
                 Background="Transparent">
@@ -36,31 +36,31 @@
             </ItemsControl>
         </Canvas>
 
-        <Button HorizontalAlignment="Left"
-                VerticalAlignment="Top"
-                ToolTipService.ToolTip="To Parent">
+        <Button ToolTipService.ToolTip="To Parent"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top">
             <FontIcon Glyph="&#xE74A;" />
         </Button>
 
         <ToggleButton x:Name="ShowSettingsButton"
+                      ToolTipService.ToolTip="Settings"
                       HorizontalAlignment="Right"
-                      VerticalAlignment="Top"
-                      ToolTipService.ToolTip="Settings">
+                      VerticalAlignment="Top">
             <FontIcon Glyph="&#xE713;" />
         </ToggleButton>
 
         <!--  Add Item Popup  -->
-        <Popup HorizontalOffset="{Binding LastClickPosition.X, UpdateSourceTrigger=PropertyChanged}"
+        <Popup HorizontalOffset="{Binding AddStepPopupPosition.X, UpdateSourceTrigger=PropertyChanged}"
                IsLightDismissEnabled="True"
-               IsOpen="{Binding AddItemPopupIsOpen, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-               VerticalOffset="{Binding LastClickPosition.Y, UpdateSourceTrigger=PropertyChanged}">
-            <Border MinWidth="200"
-                    Background="{ThemeResource SolidBackgroundFillColorQuarternary}"
-                    CornerRadius="8">
+               IsOpen="{Binding AddStepPopupIsOpen, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+               VerticalOffset="{Binding AddStepPopupPosition.Y, UpdateSourceTrigger=PropertyChanged}">
+            <Border Background="{ThemeResource SolidBackgroundFillColorQuarternary}"
+                    CornerRadius="8"
+                    MinWidth="200">
                 <StackPanel Margin="8"
                             Spacing="8">
                     <ComboBox PlaceholderText="Select A Recipe"
-                              ItemsSource="{Binding RecipesCache}"
+                              ItemsSource="{Binding AllRecipes}"
                               SelectedItem="{Binding SelectedRecipe, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               HorizontalAlignment="Stretch"
                               DisplayMemberPath="Name" />
@@ -86,9 +86,9 @@
                IsOpen="{Binding ElementName=ShowSettingsButton, Path=IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                LightDismissOverlayMode="Off"
                VerticalOffset="41">
-            <Border Width="238"
-                    Background="{ThemeResource SolidBackgroundFillColorQuarternary}"
-                    CornerRadius="8">
+            <Border Background="{ThemeResource SolidBackgroundFillColorQuarternary}"
+                    CornerRadius="8"
+                    Width="238">
                 <Grid Margin="8"
                       ColumnSpacing="8"
                       RowSpacing="8">

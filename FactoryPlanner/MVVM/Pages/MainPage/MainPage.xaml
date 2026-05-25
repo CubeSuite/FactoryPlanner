@@ -25,14 +25,14 @@
                         <FontIcon Glyph="&#xF8B0;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Content="Recipes">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE9A1;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
                 <NavigationViewItem Content="Machines">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEC5B;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Recipes">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE9A1;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Boosts">

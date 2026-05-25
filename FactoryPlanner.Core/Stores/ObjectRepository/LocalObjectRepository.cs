@@ -27,7 +27,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
         private readonly string databasePath;
         private readonly FieldInfo[] fields;
         
-        protected readonly string tableName;
+        protected readonly string _tableName;
 
         // Properties
 
@@ -39,7 +39,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     connection.Open();
 
                     using SqliteCommand command = connection.CreateCommand();
-                    command.CommandText = $"SELECT * FROM {tableName}";
+                    command.CommandText = $"SELECT * FROM {_tableName}";
 
                     using SqliteDataReader reader = command.ExecuteReader();
                     while (reader.Read()) {
@@ -64,7 +64,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     connection.Open();
 
                     using SqliteCommand command = connection.CreateCommand();
-                    command.CommandText = $"SELECT Key FROM {tableName}";
+                    command.CommandText = $"SELECT Key FROM {_tableName}";
 
                     using SqliteDataReader reader = command.ExecuteReader();
                     while (reader.Read()) {
@@ -87,7 +87,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     connection.Open();
 
                     using SqliteCommand command = connection.CreateCommand();
-                    command.CommandText = $"SELECT COUNT(*) FROM {tableName}";
+                    command.CommandText = $"SELECT COUNT(*) FROM {_tableName}";
 
                     object result = command.ExecuteScalar();
                     return Convert.ToInt32(result);
@@ -99,6 +99,8 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
             }
         }
 
+        public string TableName => _tableName;
+
         // Constructors
 
         public LocalObjectRepository(IServiceProvider serviceProvider) {
@@ -106,7 +108,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
             IProgramData programData = serviceProvider.GetRequiredService<IProgramData>();
 
             databasePath = programData.FilePaths.Database;
-            tableName = $"{typeof(V).Name}s";
+            _tableName = $"{typeof(V).Name}s";
             fields = typeof(V).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
                 .Where(f => !f.IsInitOnly)  // Exclude readonly fields (typically services/dependencies)
                 .ToArray();
@@ -135,7 +137,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     values.Append($", @{field.Name}");
                 }
 
-                command.CommandText = $"INSERT INTO {tableName} ({columns}) VALUES ({values})";
+                command.CommandText = $"INSERT INTO {_tableName} ({columns}) VALUES ({values})";
                 command.Parameters.AddWithValue("@key", keyString);
 
                 foreach (FieldInfo field in fields) {
@@ -185,7 +187,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     setClause.Append($"{fields[i].Name} = @{fields[i].Name}");
                 }
 
-                command.CommandText = $"UPDATE {tableName} SET {setClause} WHERE Key = @key";
+                command.CommandText = $"UPDATE {_tableName} SET {setClause} WHERE Key = @key";
                 command.Parameters.AddWithValue("@key", keyString);
 
                 foreach (FieldInfo field in fields) {
@@ -229,7 +231,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                 connection.Open();
 
                 using SqliteCommand command = connection.CreateCommand();
-                command.CommandText = $"DELETE FROM {tableName} WHERE Key = @key";
+                command.CommandText = $"DELETE FROM {_tableName} WHERE Key = @key";
                 command.Parameters.AddWithValue("@key", keyString);
 
                 int rowsAffected = command.ExecuteNonQuery();
@@ -259,7 +261,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                 connection.Open();
 
                 using SqliteCommand command = connection.CreateCommand();
-                command.CommandText = $"SELECT * FROM {tableName} WHERE Key = @key";
+                command.CommandText = $"SELECT * FROM {_tableName} WHERE Key = @key";
                 command.Parameters.AddWithValue("@key", keyString);
 
                 using SqliteDataReader reader = command.ExecuteReader();
@@ -299,7 +301,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                     command.Parameters.AddWithValue($"@p{i}", ConvertKeyToString(keys[i]));
                 }
 
-                command.CommandText = $"SELECT * FROM {tableName} WHERE Key IN ({string.Join(", ", parameterNames)})";
+                command.CommandText = $"SELECT * FROM {_tableName} WHERE Key IN ({string.Join(", ", parameterNames)})";
 
                 using SqliteDataReader reader = command.ExecuteReader();
                 while (reader.Read()) {
@@ -327,7 +329,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                 connection.Open();
 
                 using SqliteCommand command = connection.CreateCommand();
-                command.CommandText = $"SELECT COUNT(*) FROM {tableName} WHERE Key = @key";
+                command.CommandText = $"SELECT COUNT(*) FROM {_tableName} WHERE Key = @key";
                 command.Parameters.AddWithValue("@key", keyString);
 
                 object result = command.ExecuteScalar();
@@ -345,7 +347,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                 connection.Open();
 
                 using SqliteCommand command = connection.CreateCommand();
-                command.CommandText = $"DELETE FROM {tableName}";
+                command.CommandText = $"DELETE FROM {_tableName}";
                 command.ExecuteNonQuery();
 
                 return new OperationResult(true, null, false);
@@ -440,7 +442,7 @@ namespace FactoryPlanner.Core.Stores.ObjectStore
                 using SqliteCommand command = connection.CreateCommand();
 
                 StringBuilder createTableSql = new StringBuilder();
-                createTableSql.AppendLine($"CREATE TABLE IF NOT EXISTS {tableName} (");
+                createTableSql.AppendLine($"CREATE TABLE IF NOT EXISTS {_tableName} (");
                 createTableSql.AppendLine("    Key TEXT PRIMARY KEY");
 
                 foreach (FieldInfo field in fields) {

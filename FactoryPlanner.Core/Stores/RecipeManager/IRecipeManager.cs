@@ -9,11 +9,12 @@ using System.Threading.Tasks;
 
 namespace FactoryPlanner.Core.Stores
 {
-    public interface IRecipeManager : IObjectRepository<int, Recipe>
+    public interface IRecipeManager : IObjectCache<int, Recipe>
     {
         // Public Functions
         Recipe CreateAndAdd();
         Recipe? GetLatest();
+        OperationResult TryAdd(Recipe recipe);
         OperationResult TryUpdate(Recipe recipe);
         OperationResult TryDelete(Recipe recipe);
     }

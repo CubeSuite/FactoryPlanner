@@ -19,17 +19,16 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
     {
         // Services & Stores
         private readonly IItemManager itemManager;
+        private readonly IMachineManager machineManager;
         private readonly IRecipeManager recipeManager;
         private readonly IDialogService dialogService;
 
         // Members
         private Recipe _recipe;
-        private IEnumerable<Item> _allItemsCache;
-        private IEnumerable<Machine> _allMachinesCache;
 
         // Properties
-        public IEnumerable<Item> AllItems => _allItemsCache;
-        public IEnumerable<Machine> AllMachines => _allMachinesCache;
+        public IEnumerable<Item> AllItems => itemManager.GetAll();
+        public IEnumerable<Machine> AllMachines => machineManager.GetAll();
         
         public Recipe Recipe => _recipe;
         public int ID => _recipe.ID;
@@ -62,8 +61,11 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             }
         }
 
-        public Machine? Machine {
-            get => _allMachinesCache.FirstOrDefault(m => m.ID == _recipe.MachineId);
+        public Machine Machine {
+            get {
+                if (machineManager.TryGet(MachineID, out Machine machine)) return machine;
+                else return new Machine() { Name = "Unknown Machine" };
+            }
             set {
                 if (value == null) return;
                 if (_recipe.MachineId == value.ID) return;
@@ -91,50 +93,32 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 
         // Constructors
 
-        public RecipeViewModel(
-            Recipe recipe, 
-            IServiceProvider serviceProvider, 
-            IEnumerable<Item> allItemsCache, 
-            IEnumerable<Machine> allMachinesCache
-        ) {
+        public RecipeViewModel(Recipe recipe, IServiceProvider serviceProvider) {
             itemManager = serviceProvider.GetRequiredService<IItemManager>();
+            machineManager = serviceProvider.GetRequiredService<IMachineManager>();
             recipeManager = serviceProvider.GetRequiredService<IRecipeManager>();
             dialogService = serviceProvider.GetRequiredService<IDialogService>();
 
             _recipe = recipe;
-            _allItemsCache = allItemsCache;
-            _allMachinesCache = allMachinesCache;
 
             InputEntries = new ObservableCollection<IngredientEntry>();
             OutputEntries = new ObservableCollection<IngredientEntry>();
 
             LoadIngredientEntries();
-
-            SelectedIngredient = allItemsCache.FirstOrDefault();
-            SelectedOutput = allItemsCache.FirstOrDefault();
         }
 
-        public RecipeViewModel(
-            int recipeId,
-            IServiceProvider serviceProvider,
-            IEnumerable<Item> allItemsCache,
-            IEnumerable<Machine> allMachinesCache
-        ) {
+        public RecipeViewModel(int recipeId, IServiceProvider serviceProvider) {
             itemManager = serviceProvider.GetRequiredService<IItemManager>();
+            machineManager = serviceProvider.GetRequiredService<IMachineManager>();
             recipeManager = serviceProvider.GetRequiredService<IRecipeManager>();
             dialogService = serviceProvider.GetRequiredService<IDialogService>();
 
             recipeManager.TryGet(recipeId, out _recipe);
-            _allItemsCache = allItemsCache;
-            _allMachinesCache = allMachinesCache;
 
             InputEntries = new ObservableCollection<IngredientEntry>();
             OutputEntries = new ObservableCollection<IngredientEntry>();
 
             LoadIngredientEntries();
-
-            SelectedIngredient = allItemsCache.FirstOrDefault();
-            SelectedOutput = allItemsCache.FirstOrDefault();
         }
 
         // Commands

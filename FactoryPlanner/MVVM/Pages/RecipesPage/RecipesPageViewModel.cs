@@ -27,8 +27,6 @@ namespace FactoryPlanner.MVVM.Pages
 
         // Fields
         private List<RecipeViewModel> recipes;
-        private IEnumerable<Item> allItemsCache;
-        private IEnumerable<Machine> allMachinesCache;
         private CancellationTokenSource? searchCancellationTokenSource;
         private readonly DispatcherQueue dispatcherQueue;
 
@@ -46,13 +44,11 @@ namespace FactoryPlanner.MVVM.Pages
             recipeManager = serviceProvider.GetRequiredService<IRecipeManager>();
             searchService = serviceProvider.GetRequiredService<ISearchService>();
 
-            allItemsCache = serviceProvider.GetRequiredService<IItemManager>().GetAll().OrderBy(item => item.Name);
-            allMachinesCache = serviceProvider.GetRequiredService<IMachineManager>().GetAll().OrderBy(machine => machine.Name);
             dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             recipes = new List<RecipeViewModel>();
             foreach(Recipe recipe in recipeManager.GetAll()) {
-                RecipeViewModel viewModel = CreateRecipeViewModel(recipe, serviceProvider, allItemsCache);
+                RecipeViewModel viewModel = CreateRecipeViewModel(recipe, serviceProvider);
                 recipes.Add(viewModel);
             }
 
@@ -81,7 +77,7 @@ namespace FactoryPlanner.MVVM.Pages
         [RelayCommand]
         private void CreateNewRecipe() {
             Recipe recipe = recipeManager.CreateAndAdd();
-            RecipeViewModel viewModel = CreateRecipeViewModel(recipe, serviceProvider, allItemsCache);
+            RecipeViewModel viewModel = CreateRecipeViewModel(recipe, serviceProvider);
             recipes.Add(viewModel);
             AddRecipeToGUIAsync(viewModel);
             SearchTerm = "";
@@ -89,13 +85,9 @@ namespace FactoryPlanner.MVVM.Pages
 
         // Private Functions
 
-        private RecipeViewModel CreateRecipeViewModel(Recipe recipe, IServiceProvider serviceProvider, IEnumerable<Item> allItemsCache) {
-            RecipeViewModel viewModel = new RecipeViewModel(
-                recipe, serviceProvider, allItemsCache, allMachinesCache
-            );
-            
+        private RecipeViewModel CreateRecipeViewModel(Recipe recipe, IServiceProvider serviceProvider) {
+            RecipeViewModel viewModel = new RecipeViewModel(recipe, serviceProvider);
             viewModel.RecipeDeleted += OnRecipeDeleted;
-
             return viewModel;
         }
 

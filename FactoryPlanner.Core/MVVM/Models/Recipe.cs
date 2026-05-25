@@ -14,6 +14,7 @@ namespace FactoryPlanner.Core.MVVM.Models
     {
         // Fields
         private int _id;
+        private int _gameId;
         private string _name;
         private int _machineId;
         private double _craftTime;
@@ -22,6 +23,7 @@ namespace FactoryPlanner.Core.MVVM.Models
 
         // Properties
         public int ID => _id;
+        public int GameID => _gameId;
         public Dictionary<int, int> Inputs => _inputs;
         public Dictionary<int, int> Outputs => _outputs;
 
@@ -53,6 +55,7 @@ namespace FactoryPlanner.Core.MVVM.Models
         
         public Recipe() {
             _id = -1;
+            _gameId = -1;
             _name = "";
             _machineId = -1;
             _craftTime = 0;
@@ -60,21 +63,14 @@ namespace FactoryPlanner.Core.MVVM.Models
             _outputs = new Dictionary<int, int>();
         }
         
-        public Recipe(int id) {
+        public Recipe(int id, int gameId) {
             _id = id;
+            _gameId = gameId;
             _name = "";
             _machineId = -1;
             _craftTime = 0;
             _inputs = new Dictionary<int, int>();
             _outputs = new Dictionary<int, int>();
-        }
-
-        public Recipe(string name, Dictionary<int, int> inputs, Dictionary<int, int> outputs) {
-            _name = name;
-            _machineId = -1;
-            _craftTime = 0;
-            _inputs = inputs;
-            _outputs = outputs;
         }
     }
 }
