@@ -29,5 +29,9 @@ namespace FactoryPlanner.MVVM.Pages
         public HomePage() {
             InitializeComponent();
         }
+
+        private void Button_Holding(object sender, HoldingRoutedEventArgs e) {
+
+        }
     }
 }

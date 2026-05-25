@@ -32,7 +32,9 @@ namespace FactoryPlanner.Core.Stores
             OperationResult result = TryAdd(game);
             if (!result) return result;
 
-            game = GetLatest() ?? new Game(); // Warning suppression
+            result = TryGet(game.ID, out game);
+            if (!result) return result;
+
             return new OperationResult(true, null, false);
         }
 

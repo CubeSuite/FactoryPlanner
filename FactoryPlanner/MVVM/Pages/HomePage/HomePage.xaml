@@ -37,9 +37,7 @@
                             Margin="8"
                             HorizontalAlignment="Right"
                             Command="{Binding AddNewGameCommand}">
-                        <Button.Content>
-                            <FontIcon Glyph="&#xE710;" />
-                        </Button.Content>
+                        <FontIcon Glyph="&#xE710;" />
                     </Button>
 
                     <ScrollViewer Grid.Row="1">
@@ -85,10 +83,16 @@
 
             <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
                     CornerRadius="8">
-                <StackPanel>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
                     <controls:TitleLabel Text="Tips"
                                          Height="34" />
-                    <StackPanel Margin="16,8,0,8">
+
+                    <StackPanel Grid.Row="1"
+                                Margin="16,8,0,8">
                         <TextBlock Text="• Most of the UI has tooltips if you're not sure what something does"
                                    TextWrapping="Wrap" />
                         <TextBlock TextWrapping="Wrap">
@@ -98,7 +102,7 @@
                             </Hyperlink>
                         </TextBlock>
                     </StackPanel>
-                </StackPanel>
+                </Grid>
             </Border>
 
             <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
@@ -111,7 +115,7 @@
                                 Spacing="8">
                         <TextBlock Text="1) Check the online games list for the game you want to plan for and click the download button."
                                    TextWrapping="Wrap" />
-                        <TextBlock Text="2) If it's not avaiable, click the + button in the My Games panel, then name it."
+                        <TextBlock Text="2) If it's not available, click the + button in the My Games panel, then name it."
                                    TextWrapping="Wrap" />
                         <TextBlock Text="3) Start adding items on the Items page. "
                                    TextWrapping="Wrap" />
@@ -121,7 +125,7 @@
                                    TextWrapping="Wrap" />
                         <TextBlock Text="6) If your game features Boosts/Perks add them on the Boosts page."
                                    TextWrapping="Wrap" />
-                        <TextBlock Text="7) Head to the factory plann"
+                        <TextBlock Text="7) Head to the factory planner page to plan your production lines."
                                    TextWrapping="Wrap" />
                     </StackPanel>
                 </StackPanel>

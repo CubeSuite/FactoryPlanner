@@ -77,7 +77,7 @@ namespace FactoryPlanner.Stores
         private bool _renderGrid = true;
         private int _gridSize = 10;
 
-        private int _activeGame = -1;
+        private int _activeGame = 0;
 
         private readonly object saveLock = new object();
         private CancellationTokenSource? tokenSource;

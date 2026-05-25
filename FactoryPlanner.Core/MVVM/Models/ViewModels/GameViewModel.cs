@@ -55,7 +55,7 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 
         // Events
 
-        public Action<GameViewModel>? Deleted;
+        public event Action<GameViewModel>? Deleted;
 
         // Listeners
 
