@@ -250,19 +250,14 @@ namespace FactoryPlanner.Tests
         }
 
         [Fact]
-        public async Task Search_MatchesPartialPhrase_WhenSearchSplitQueryIsFalse() {
+        public async Task Search_NoMatchesForPartialPhrase_WhenSearchSplitQueryIsFalse() {
             mockUserSettings.Setup(x => x.SearchCaseSensitive).Returns(false);
             mockUserSettings.Setup(x => x.SearchSplitQuery).Returns(false);
             SearchService searchService = CreateSearchService();
             List<TestItem> items = CreateTestItems();
 
-            // "raw material" should match as a phrase (case insensitive: "Raw iron material" contains "raw material")
             IEnumerable<TestItem> result = await searchService.Search(items, "raw material", item => item.Description);
-
-            // Both descriptions contain "raw material": "Raw iron material", "Raw copper material"
-            result.Should().HaveCount(2);
-            result.Should().Contain(item => item.Name == "Iron Ore");
-            result.Should().Contain(item => item.Name == "Copper Ore");
+            result.Should().BeEmpty();
         }
 
         #endregion
