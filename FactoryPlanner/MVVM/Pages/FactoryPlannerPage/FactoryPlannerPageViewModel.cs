@@ -23,12 +23,11 @@ namespace FactoryPlanner.MVVM.Pages
     {
         // Services & Stores
         private readonly IServiceProvider serviceProvider;
+        private readonly IRecipeManager recipeManager;
         private readonly IUserSettings userSettings;
 
         // Fields
         private Dictionary<string, FactoryIconSource> iconSourceMap;
-        private IEnumerable<Item> allItemsCache;
-        private IEnumerable<Machine> allMachinesCache;
 
         // Properties
         public ProductionLineViewModel ProductionLine { get; set; }
@@ -69,13 +68,13 @@ namespace FactoryPlanner.MVVM.Pages
 
         [ObservableProperty]
         public partial Recipe? SelectedRecipe { get; set; }
-        public IEnumerable<Recipe> RecipesCache { get; }
+        public IEnumerable<Recipe> AllRecipes => recipeManager.GetAll();
 
         [ObservableProperty]
-        public partial bool AddItemPopupIsOpen { get; set; }
+        public partial bool AddStepPopupIsOpen { get; set; }
 
         [ObservableProperty]
-        public partial Point LastClickPosition { get; set; }
+        public partial Point AddStepPopupPosition { get; set; }
 
         [ObservableProperty]
         public partial Point LastCanvasClickPosition { get; set; }
@@ -84,16 +83,13 @@ namespace FactoryPlanner.MVVM.Pages
 
         public FactoryPlannerPageViewModel(IServiceProvider serviceProvider) {
             this.serviceProvider = serviceProvider;
+            recipeManager = serviceProvider.GetRequiredService<IRecipeManager>();
             userSettings = serviceProvider.GetRequiredService<IUserSettings>();
 
             iconSourceMap = EnumExtensions.GetValuesWithDescriptions<FactoryIconSource>();
 
-            allItemsCache = serviceProvider.GetRequiredService<IItemManager>().GetAll();
-            allMachinesCache = serviceProvider.GetRequiredService<IMachineManager>().GetAll();
-
             IconSources = iconSourceMap.Keys.ToArray();
             SelectedIconSource = userSettings.IconSource.GetDescription();
-            RecipesCache = serviceProvider.GetRequiredService<IRecipeManager>().GetAll();
             SelectedRecipe = null;
 
             // ToDo: Load root production line
@@ -114,8 +110,8 @@ namespace FactoryPlanner.MVVM.Pages
         partial void OnSelectedRecipeChanged(Recipe? value) {
             if (value == null) return;
             ProductionStep step = new ProductionStep(value, LastCanvasClickPosition);
-            ProductionLine.Steps.Add(new ProductionStepViewModel(step, serviceProvider, allItemsCache, allMachinesCache));
-            AddItemPopupIsOpen = false;
+            ProductionLine.Steps.Add(new ProductionStepViewModel(step, serviceProvider));
+            AddStepPopupIsOpen = false;
 
             // Defer resetting to avoid binding timing issues
             _ = ResetSelectedRecipeAsync();
@@ -135,8 +131,8 @@ namespace FactoryPlanner.MVVM.Pages
 
         [RelayCommand]
         private void CanvasClick((Point viewportPosition, Point canvasPosition) positions) {
-            AddItemPopupIsOpen = true;
-            LastClickPosition = positions.viewportPosition;
+            AddStepPopupIsOpen = true;
+            AddStepPopupPosition = positions.viewportPosition;
             LastCanvasClickPosition = positions.canvasPosition;
         }
 

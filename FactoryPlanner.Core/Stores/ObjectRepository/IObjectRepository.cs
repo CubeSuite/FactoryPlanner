@@ -9,7 +9,10 @@ namespace FactoryPlanner.Core.Stores.ObjectCache
 {
     public interface IObjectRepository<T, V> : IObjectCache<T, V>
     {
-        // Additional repository-specific methods for database operations
+        // Properties
+        string TableName { get; }
+
+        // Public Functions
 
         /// <summary>
         /// Executes a custom SQL query and returns results as instances of V

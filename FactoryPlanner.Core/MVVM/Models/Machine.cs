@@ -11,12 +11,14 @@ namespace FactoryPlanner.Core.MVVM.Models
     {
         // Members
         private int _id;
+        private int _gameId;
         private string _name;
         private string _iconPath;
         private double _powerCost;
 
         // Properties
         public int ID => _id;
+        public int GameID => _gameId;
 
         public string Name {
             get => _name;
@@ -46,13 +48,15 @@ namespace FactoryPlanner.Core.MVVM.Models
 
         public Machine() {
             _id = -1;
+            _gameId = -1;
             _name = "";
             _iconPath = "";
             _powerCost = 0;
         }
 
-        public Machine(int id, Machine details) {
+        public Machine(int id, int gameId, Machine details) {
             _id = id;
+            _gameId = gameId;
             _name = details.Name;
             _iconPath = details.IconPath;
             _powerCost = details.PowerCost;
@@ -60,6 +64,7 @@ namespace FactoryPlanner.Core.MVVM.Models
 
         public Machine(string name, string iconPath, double powerCost) {
             _id = -1;
+            _gameId = -1;
             _name = name;
             _iconPath = iconPath;
             _powerCost = powerCost;

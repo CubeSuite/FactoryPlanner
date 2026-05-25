@@ -39,11 +39,12 @@
                 <TextBlock Text="Made In:"
                            Grid.Column="1"
                            VerticalAlignment="Center" />
-                <ComboBox ItemsSource="{Binding AllMachines}"
+                <ComboBox PlaceholderText="Unknown Machine"
+                          ItemsSource="{Binding AllMachines}"
                           SelectedItem="{Binding Machine, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          SelectedIndex="0"
                           Grid.Column="2"
-                          DisplayMemberPath="Name" />
+                          DisplayMemberPath="Name"
+                          PlaceholderForeground="IndianRed" />
             </Grid>
 
             <TextBox Text="{Binding CraftTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -67,9 +68,9 @@
                            Grid.Row="2">
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                        <Border Margin="0,4,0,0"
-                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                                CornerRadius="8">
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                CornerRadius="8"
+                                Margin="0,4,0,0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
@@ -132,9 +133,9 @@
                            Grid.Row="2">
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                        <Border Margin="0,4,0,0"
-                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                                CornerRadius="8">
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                CornerRadius="8"
+                                Margin="0,4,0,0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />

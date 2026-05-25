@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace FactoryPlanner.Core.Stores
 {
-    public interface IItemManager : IObjectRepository<int, Item>
+    public interface IItemManager : IObjectCache<int, Item>
     {
         // Public Functions
         public OperationResult CreateAndAdd(string name, string iconPath);

@@ -66,15 +66,13 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
         }
 
         // Constructors
-        public ProductionStepViewModel(ProductionStep step, IServiceProvider serviceProvider, 
-               IEnumerable<Item> allItemsCache, IEnumerable<Machine> allMachinesCache
-        ) {
+        public ProductionStepViewModel(ProductionStep step, IServiceProvider serviceProvider) {
             userSettings = serviceProvider.GetRequiredService<IUserSettings>();
             userSettings.SettingChanged += OnSettingChanged;
 
             _productionStep = step;
 
-            _recipe = new RecipeViewModel(step.RecipeId, serviceProvider, allItemsCache, allMachinesCache);
+            _recipe = new RecipeViewModel(step.RecipeId, serviceProvider);
             _machine = new MachineViewModel(_recipe.Machine ?? new Machine() { Name = "Unknown" });
         }
 
