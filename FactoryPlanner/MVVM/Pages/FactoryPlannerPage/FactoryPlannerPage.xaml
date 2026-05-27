@@ -76,8 +76,16 @@
                     MinWidth="200">
                 <StackPanel Margin="8"
                             Spacing="8">
-                    <ComboBox PlaceholderText="Select A Recipe"
-                              ItemsSource="{Binding AllRecipes}"
+                    <AutoSuggestBox x:Name="RecipeBox"
+                                    Text="{Binding RecipeSearchTerm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    PlaceholderText="Search Recipes..."
+                                    ItemsSource="{Binding FilteredRecipes}"
+                                    HorizontalAlignment="Stretch"
+                                    DisplayMemberPath="Name"
+                                    QueryIcon="Find"
+                                    SuggestionChosen="OnRecipeBoxSuggestionChosen" />
+                    <ComboBox PlaceholderText="All Recipes"
+                              ItemsSource="{Binding FilteredByItem}"
                               SelectedItem="{Binding SelectedRecipe, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               HorizontalAlignment="Stretch"
                               DisplayMemberPath="Name" />

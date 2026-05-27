@@ -1,7 +1,9 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using ABI.Windows.ApplicationModel.Activation;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FactoryPlanner.Core.MVVM.Models;
 using FactoryPlanner.Core.MVVM.Models.ViewModels;
+using FactoryPlanner.Core.Services;
 using FactoryPlanner.Core.Stores;
 using FactoryPlanner.Core.Stores.UserSettings;
 using FactoryPlanner.MVVM.Views;
@@ -28,11 +30,12 @@ namespace FactoryPlanner.MVVM.Pages
         private readonly IServiceProvider serviceProvider;
         private readonly IRecipeManager recipeManager;
         private readonly IUserSettings _userSettings;
+        private readonly ISearchService searchService;
 
         // Fields
         private Dictionary<string, FactoryIconSource> iconSourceMap;
-        //private ProductionPortViewModel _startPort;
-        //private ProductionPortViewModel _endPoint;
+        private List<RecipeViewModel> _allRecipes;
+        private IEnumerable<RecipeViewModel> _filteredRecipes;
 
         // Properties
         public IUserSettings UserSettings => _userSettings;
@@ -74,8 +77,28 @@ namespace FactoryPlanner.MVVM.Pages
         }
 
         [ObservableProperty]
-        public partial Recipe? SelectedRecipe { get; set; }
-        public IEnumerable<Recipe> AllRecipes => recipeManager.GetAll();
+        public partial RecipeViewModel? SelectedRecipe { get; set; }
+        public List<RecipeViewModel> AllRecipes => _allRecipes;
+        
+        public IEnumerable<RecipeViewModel> FilteredByItem {
+            get {
+                if (StartPort == null) return AllRecipes;
+                else if (StartPort.Type == PortType.Input) return AllRecipes.Where(recipe => recipe.Outputs.ContainsKey(StartPort.Item));
+                else if (StartPort.Type == PortType.Output) return AllRecipes.Where(recipe => recipe.Inputs.ContainsKey(StartPort.Item));
+                return AllRecipes;
+            }
+        }
+
+        public IEnumerable<RecipeViewModel> FilteredRecipes {
+            get => _filteredRecipes;
+            set {
+                _filteredRecipes = value;
+                OnPropertyChanged();
+            }
+        }
+
+        [ObservableProperty]
+        public partial string RecipeSearchTerm { get; set; }
 
         [ObservableProperty]
         public partial bool AddStepPopupIsOpen { get; set; }
@@ -86,18 +109,35 @@ namespace FactoryPlanner.MVVM.Pages
         [ObservableProperty]
         public partial Point LastCanvasClickPosition { get; set; }
 
+        [ObservableProperty]
+        public partial bool IsDrawingConnection { get; set; }
+
+        [ObservableProperty]
+        public partial ProductionPortViewModel? StartPort { get; set; }
+
+        [ObservableProperty]
+        public partial ProductionPortViewModel? EndPort { get; set; }
+
         // Constructors
 
         public FactoryPlannerPageViewModel(IServiceProvider serviceProvider) {
             this.serviceProvider = serviceProvider;
             recipeManager = serviceProvider.GetRequiredService<IRecipeManager>();
             _userSettings = serviceProvider.GetRequiredService<IUserSettings>();
+            searchService = serviceProvider.GetRequiredService<ISearchService>();
 
             iconSourceMap = EnumExtensions.GetValuesWithDescriptions<FactoryIconSource>();
+            _allRecipes = new List<RecipeViewModel>();
+            _filteredRecipes = new List<RecipeViewModel>();
+
+            foreach(Recipe recipe in recipeManager.GetAll()) {
+                _allRecipes.Add(new RecipeViewModel(recipe, serviceProvider));
+            }
 
             IconSources = iconSourceMap.Keys.ToArray();
             SelectedIconSource = _userSettings.IconSource.GetDescription();
             SelectedRecipe = null;
+            RecipeSearchTerm = "";
 
             // ToDo: Load root production line
             ProductionLineVM = new ProductionLineViewModel(new ProductionLine());
@@ -114,19 +154,35 @@ namespace FactoryPlanner.MVVM.Pages
             }
         }
 
-        partial void OnSelectedRecipeChanged(Recipe? value) {
-            if (value == null) return;
-            ProductionStep step = new ProductionStep(value, LastCanvasClickPosition);
-            ProductionLineVM.Steps.Add(new ProductionStepViewModel(step, serviceProvider));
-            AddStepPopupIsOpen = false;
-
-            // Defer resetting to avoid binding timing issues
-            _ = ResetSelectedRecipeAsync();
+        partial void OnRecipeSearchTermChanged(string value) {
+            _ = SearchForRecipesAsync();
         }
 
-        private async Task ResetSelectedRecipeAsync() {
-            await Task.Yield();
-            SelectedRecipe = null;
+        partial void OnSelectedRecipeChanged(RecipeViewModel? value) {
+            if (value == null) return;
+            ProductionStep step = new ProductionStep(value.Recipe, LastCanvasClickPosition);
+            ProductionStepViewModel stepVM = new ProductionStepViewModel(step, serviceProvider);
+            ProductionLineVM.Steps.Add(stepVM);
+            AddStepPopupIsOpen = false;
+
+            _ = ResetSelectedRecipeAsync();
+
+            if (IsDrawingConnection && StartPort != null) {
+                PortType targetType = StartPort.Type == PortType.Input ? PortType.Output : PortType.Input;
+                ProductionPortViewModel? port = stepVM.FindPortForItem(targetType, StartPort.Item);
+                if (port == null) {
+                    IsDrawingConnection = false;
+                    StartPort = null;
+                    return;
+                }
+                
+                EndPort = port;
+                FormNewConnection();
+            }
+        }
+
+        partial void OnStartPortChanged(ProductionPortViewModel? value) {
+            OnPropertyChanged(nameof(FilteredByItem));
         }
 
         // Commands
@@ -160,9 +216,9 @@ namespace FactoryPlanner.MVVM.Pages
 
         // Public Functions
 
-        public void FormNewConnection(ProductionPortViewModel startVM, ProductionPortViewModel endVM) {
-            ProductionPortViewModel inputVM = startVM.Type == PortType.Input ? endVM : startVM;
-            ProductionPortViewModel outputVM = startVM.Type == PortType.Input ? startVM : endVM;
+        public void FormNewConnection() {
+            ProductionPortViewModel inputVM = StartPort.Type == PortType.Input ? EndPort : StartPort;
+            ProductionPortViewModel outputVM = StartPort.Type == PortType.Input ? StartPort : EndPort;
 
             Connection connection = new Connection(inputVM.Port, outputVM.Port);
             ProductionLineVM.ProductionLine.Connections.Add(connection);
@@ -175,6 +231,21 @@ namespace FactoryPlanner.MVVM.Pages
             else outputVM.PullResources();
 
             ProductionLineVM.Connections.Add(connectionVM);
+
+            StartPort = null;
+            EndPort = null;
+            IsDrawingConnection = false;
+        }
+
+        // Private Functions
+
+        private async Task ResetSelectedRecipeAsync() {
+            await Task.Yield();
+            SelectedRecipe = null;
+        }
+
+        private async Task SearchForRecipesAsync() {
+            FilteredRecipes = await searchService.Search(FilteredByItem, RecipeSearchTerm, RecipeViewModel.GetSearchSelectors());
         }
     }
 }

@@ -15,7 +15,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
@@ -37,11 +36,9 @@ namespace FactoryPlanner.MVVM.Pages
         private ScaleTransform canvasScale = new ScaleTransform();
         private TransformGroup canvasTransform = new TransformGroup();
 
-        private bool isDrawingConnection = false;
         private Point portPosition;
         private Point pointerPosition;
-        private Microsoft.UI.Xaml.Shapes.Path? connectionPath;
-        private ProductionPortViewModel connectionStart = null!;
+        private Path? connectionPath;
 
         // Properties
         public FactoryPlannerPageViewModel ViewModel => (FactoryPlannerPageViewModel)DataContext;
@@ -70,7 +67,7 @@ namespace FactoryPlanner.MVVM.Pages
 
                 Color lineColour = ViewModel.UserSettings.DarkMode ? Colors.White : Colors.Black;
                 SolidColorBrush lineBrush = new SolidColorBrush(lineColour);
-                connectionPath = new Microsoft.UI.Xaml.Shapes.Path() {
+                connectionPath = new Path() {
                     Stroke = lineBrush,
                     StrokeThickness = 2,
                     StrokeLineJoin = PenLineJoin.Round,
@@ -95,6 +92,9 @@ namespace FactoryPlanner.MVVM.Pages
                 e.PropertyName == nameof(FactoryPlannerPageViewModel.GridSize)
             ) {
                 RenderGrid();
+            }
+            else if (e.PropertyName == nameof(FactoryPlannerPageViewModel.IsDrawingConnection)) {
+                if (!ViewModel.IsDrawingConnection) connectionPath?.Data = null;
             }
         }
 
@@ -142,19 +142,21 @@ namespace FactoryPlanner.MVVM.Pages
             }
 
             if (pointer.Properties.IsRightButtonPressed) {
-                isDrawingConnection = false;
+                ViewModel.IsDrawingConnection = false;
                 connectionPath?.Data = null;
+                ViewModel.StartPort = null;
                 return;
             }
 
             if (!isPanning && (e.OriginalSource == (object)MainCanvas || e.OriginalSource == (object)GridCanvas || e.OriginalSource == (object?)connectionPath)) {
                 ShowAddItemPopup(e);
+                RecipeBox.Focus(FocusState.Keyboard);
             }
         }
 
         private void OnCanvasPointerMoved(object sender, PointerRoutedEventArgs e) {
             if (isPanning) HandlePanMove(e);
-            else if (isDrawingConnection) DrawConnectionInProgress(e);
+            else if (ViewModel.IsDrawingConnection) DrawConnectionInProgress(e);
         }
 
         private void OnCanvasPointerReleased(object sender, PointerRoutedEventArgs e) {
@@ -188,16 +190,21 @@ namespace FactoryPlanner.MVVM.Pages
 
         private void OnProductionStepPortPressed(object sender, ProductionPortViewModel port) {
             if (sender is not ProductionStepView stepView) return;
-            
-            isDrawingConnection = !isDrawingConnection;
 
-            if (isDrawingConnection) {
+            ViewModel.IsDrawingConnection = !ViewModel.IsDrawingConnection;
+
+            if (ViewModel.IsDrawingConnection) {
                 if (connectionPath != null) connectionPath.Data = null;
                 HandleStartDrawingConnection(stepView, port);
             }
             else {
                 HandleEndDrawingConnection(port);
             }
+        }
+
+        private void OnRecipeBoxSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs e) {
+            ViewModel.SelectedRecipe = (RecipeViewModel)e.SelectedItem;
+            ViewModel.RecipeSearchTerm = "";
         }
 
         // Private Functions
@@ -294,7 +301,7 @@ namespace FactoryPlanner.MVVM.Pages
         }
 
         private void HandleStartDrawingConnection(ProductionStepView stepView, ProductionPortViewModel port) {
-            connectionStart = port;
+            ViewModel.StartPort = port;
             string repeaterName = port.Type == PortType.Input ? "InputsContainer" : "OutputsContainer";
             
             if (stepView.FindName(repeaterName) is ItemsRepeater repeater &&
@@ -309,7 +316,7 @@ namespace FactoryPlanner.MVVM.Pages
         }
 
         private void DrawConnectionInProgress(PointerRoutedEventArgs e) {
-            if (!isDrawingConnection || connectionPath == null) return;
+            if (!ViewModel.IsDrawingConnection || connectionPath == null) return;
 
             pointerPosition = e.GetCurrentPoint(MainCanvas).Position;
 
@@ -339,7 +346,8 @@ namespace FactoryPlanner.MVVM.Pages
 
         private void HandleEndDrawingConnection(ProductionPortViewModel port) {
             connectionPath?.Data = null;
-            ViewModel.FormNewConnection(connectionStart, port);
+            ViewModel.EndPort = port;
+            ViewModel.FormNewConnection();
         }
     }
 }

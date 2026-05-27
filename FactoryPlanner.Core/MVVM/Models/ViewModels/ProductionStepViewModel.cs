@@ -134,5 +134,13 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                 //double quantity = 
             }
         }
+
+        public ProductionPortViewModel? FindPortForItem(PortType type, Item item) {
+            return type switch {
+                PortType.Input => InputPorts.FirstOrDefault(port => port.Item == item),
+                PortType.Output => OutputPorts.FirstOrDefault(port => port.Item == item),
+                _ => null
+            };
+        }
     }
 }
