@@ -18,15 +18,6 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
         [ObservableProperty]
         public partial double Quantity { get; set; }
 
-        //public double Quantity {
-        //    get => _connection.Quantity;
-        //    set {
-        //        if (_connection.Quantity == value) return;
-        //        _connection.Quantity = value;
-        //        OnPropertyChanged();
-        //    }
-        //}
-
         [ObservableProperty]
         public partial ProductionPortViewModel Input { get; set; }
         

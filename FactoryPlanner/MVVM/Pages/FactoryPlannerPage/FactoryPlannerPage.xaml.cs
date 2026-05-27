@@ -141,6 +141,12 @@ namespace FactoryPlanner.MVVM.Pages
                 return;
             }
 
+            if (pointer.Properties.IsRightButtonPressed) {
+                isDrawingConnection = false;
+                connectionPath?.Data = null;
+                return;
+            }
+
             if (!isPanning && (e.OriginalSource == (object)MainCanvas || e.OriginalSource == (object)GridCanvas || e.OriginalSource == (object?)connectionPath)) {
                 ShowAddItemPopup(e);
             }

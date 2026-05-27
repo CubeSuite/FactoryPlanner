@@ -90,13 +90,17 @@ namespace FactoryPlanner.MVVM.Views
         }
 
         private void OnInputPointerPressed(object sender, PointerRoutedEventArgs e) {
-            RaiseProductionStepPortPressed(sender, PortType.Input);
-            e.Handled = true;
+            if (e.GetCurrentPoint(sender as UIElement).Properties.IsLeftButtonPressed) {
+                RaiseProductionStepPortPressed(sender, PortType.Input);
+                e.Handled = true;
+            }
         }
 
         private void OnOutputPointerPressed(object sender, PointerRoutedEventArgs e) {
-            RaiseProductionStepPortPressed(sender, PortType.Output);
-            e.Handled = true;
+            if (e.GetCurrentPoint(sender as UIElement).Properties.IsLeftButtonPressed) {
+                RaiseProductionStepPortPressed(sender, PortType.Output);
+                e.Handled = true;
+            }
         }
 
         private void RaiseProductionStepPortPressed(object sender, PortType portType) {

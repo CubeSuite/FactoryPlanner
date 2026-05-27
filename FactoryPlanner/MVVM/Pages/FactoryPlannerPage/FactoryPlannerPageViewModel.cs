@@ -31,6 +31,8 @@ namespace FactoryPlanner.MVVM.Pages
 
         // Fields
         private Dictionary<string, FactoryIconSource> iconSourceMap;
+        //private ProductionPortViewModel _startPort;
+        //private ProductionPortViewModel _endPoint;
 
         // Properties
         public IUserSettings UserSettings => _userSettings;
