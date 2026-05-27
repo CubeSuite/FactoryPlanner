@@ -14,7 +14,7 @@
               RowSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
@@ -23,14 +23,16 @@
             </Grid.RowDefinitions>
 
 
-            <TextBlock Grid.Column="1"
-                       HorizontalAlignment="Center">
-                <TextBlock.Inlines>
-                    <Run Text="{Binding NumMachines}" />
-                    <Run Text=" " />
-                    <Run Text="{Binding MachineNameLabel}" />
-                </TextBlock.Inlines>
-            </TextBlock>
+            <StackPanel Grid.Column="1"
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="8">
+                <TextBox Text="{Binding NumMachines, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         MinWidth="0"
+                         LostFocus="OnNumMachinesBoxLostFocus" />
+                <TextBlock Text="{Binding MachineName}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
 
             <Image Source="{Binding IconPath}"
                    MaxWidth="100"

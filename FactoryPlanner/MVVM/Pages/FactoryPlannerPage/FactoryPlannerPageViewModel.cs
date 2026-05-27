@@ -17,6 +17,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Foundation;
+using Windows.Media.Audio;
 using WinRT;
 
 namespace FactoryPlanner.MVVM.Pages
@@ -157,21 +158,26 @@ namespace FactoryPlanner.MVVM.Pages
 
         // Public Functions
 
-        public void FormNewConnection(ProductionStepPortPressedEventArgs start, ProductionStepPortPressedEventArgs end) {
-            ProductionPort input;
-            ProductionPort output;
+        public void FormNewConnection(ProductionPortViewModel startVM, ProductionPortViewModel endVM) {
+            ProductionPortViewModel inputVM = startVM.Type == PortType.Input ? endVM : startVM;
+            ProductionPortViewModel outputVM = startVM.Type == PortType.Input ? startVM : endVM;
 
-            if (start.PortType == PortType.Input) {
-                input = new ProductionPort(end.ProductionStepVM.ProductionStep, end.PortType, end.PortIndex);
-                output = new ProductionPort(start.ProductionStepVM.ProductionStep, start.PortType, start.PortIndex);
-            }
-            else {
-                input = new ProductionPort(start.ProductionStepVM.ProductionStep, start.PortType, start.PortIndex);
-                output = new ProductionPort(end.ProductionStepVM.ProductionStep, end.PortType, end.PortIndex);
-            }
+            Connection connection = new Connection(inputVM.Port, outputVM.Port/*, quantity*/);
+            ProductionLineVM.ProductionLine.Connections.Add(connection);
 
-            Connection connection = new Connection(input, output);
-            ConnectionViewModel connectionVM = new ConnectionViewModel(connection);
+            ConnectionViewModel connectionVM = new ConnectionViewModel(connection, inputVM, outputVM);
+            inputVM.Connections.Add(connectionVM);
+            outputVM.Connections.Add(connectionVM);
+
+            if (outputVM.AreNeedsMetByPrioritySteps()) inputVM.PushResources();
+            else outputVM.PullResources();
+
+            //endVM.UpdateConnections(connectionVM);
+            //endVM.Parent.UpdateConnections();
+
+            //if (inputVM.Quantity != 0) inputVM.Parent.UpdateConnections();
+            //if (outputVM.Quantity != 0) outputVM.Parent.UpdateConnections();
+
             ProductionLineVM.Connections.Add(connectionVM);
         }
     }

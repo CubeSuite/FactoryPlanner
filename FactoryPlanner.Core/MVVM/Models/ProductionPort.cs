@@ -26,10 +26,16 @@ namespace FactoryPlanner.Core.MVVM.Models
             _index = index;
         }
 
-        public enum PortType
-        {
-            Input,
-            Output
+        public ProductionPort(ProductionPort other) {
+            _parent = other.Parent;
+            _type = other.Type;
+            _index = other.Index;
         }
+    }
+
+    public enum PortType
+    {
+        Input,
+        Output
     }
 }

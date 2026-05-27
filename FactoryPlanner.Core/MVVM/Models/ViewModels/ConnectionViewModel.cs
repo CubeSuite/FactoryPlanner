@@ -16,34 +16,41 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
         // Properties
 
         [ObservableProperty]
-        public partial ConnectedStepViewModel Input { get; set; }
+        public partial double Quantity { get; set; }
+
+        //public double Quantity {
+        //    get => _connection.Quantity;
+        //    set {
+        //        if (_connection.Quantity == value) return;
+        //        _connection.Quantity = value;
+        //        OnPropertyChanged();
+        //    }
+        //}
+
+        [ObservableProperty]
+        public partial ProductionPortViewModel Input { get; set; }
         
         [ObservableProperty]
-        public partial ConnectedStepViewModel Output { get; set; }
+        public partial ProductionPortViewModel Output { get; set; }
 
         // Constructors
 
-        public ConnectionViewModel(Connection connection) {
+        public ConnectionViewModel(Connection connection, ProductionPortViewModel input, ProductionPortViewModel output) {
             _connection = connection;
-            Input = new ConnectedStepViewModel(connection.Input);
-            Output = new ConnectedStepViewModel(connection.Output);
+            Input = input;
+            Output = output;
+        }
+
+        // Public Functions
+
+        public void UpdateConnections(ProductionPortViewModel? caller = null) {
+            if (Input != caller) Input.UpdateConnections(this);
+            if (Output != caller) Output.UpdateConnections(this);
         }
     }
 
-    public class ConnectedStepViewModel 
-    {
-        // Fields
-        private ProductionPort _connectedStep;
-
-        // Properties
-        public ProductionStep Step => _connectedStep.Step;
-        public PortType PortType => _connectedStep.PortType;
-        public int PortIndex => _connectedStep.PortIndex;
-
-        // Constructors
-
-        public ConnectedStepViewModel(ProductionPort connectedStep) {
-            _connectedStep = connectedStep;
-        }
+    public class ConnectionUpdateRequest {
+        public bool IsPush { get; set; }
+        public int NumResources { get; set; }
     }
 }

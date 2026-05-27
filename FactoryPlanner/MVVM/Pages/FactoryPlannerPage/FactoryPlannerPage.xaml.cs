@@ -41,7 +41,7 @@ namespace FactoryPlanner.MVVM.Pages
         private Point portPosition;
         private Point pointerPosition;
         private Microsoft.UI.Xaml.Shapes.Path? connectionPath;
-        private ProductionStepPortPressedEventArgs connectionStart;
+        private ProductionPortViewModel connectionStart = null!;
 
         // Properties
         public FactoryPlannerPageViewModel ViewModel => (FactoryPlannerPageViewModel)DataContext;
@@ -127,6 +127,12 @@ namespace FactoryPlanner.MVVM.Pages
         // Canvas Listeners
 
         private void OnCanvasClicked(object sender, PointerRoutedEventArgs e) {
+            if (FocusManager.GetFocusedElement(XamlRoot) is TextBox) {
+                MainCanvas.Focus(FocusState.Programmatic);
+                e.Handled = true;
+                return;
+            }
+
             PointerPoint pointer = e.GetCurrentPoint(this);
             Point position = pointer.Position;
 
@@ -174,17 +180,17 @@ namespace FactoryPlanner.MVVM.Pages
             e.Handled = true;
         }
 
-        private void OnProductionStepPortPressed(object sender, ProductionStepPortPressedEventArgs e) {
+        private void OnProductionStepPortPressed(object sender, ProductionPortViewModel port) {
             if (sender is not ProductionStepView stepView) return;
             
             isDrawingConnection = !isDrawingConnection;
 
             if (isDrawingConnection) {
                 if (connectionPath != null) connectionPath.Data = null;
-                HandleStartDrawingConnection(stepView, e);
+                HandleStartDrawingConnection(stepView, port);
             }
             else {
-                HandleEndDrawingConnection(e);
+                HandleEndDrawingConnection(port);
             }
         }
 
@@ -281,12 +287,12 @@ namespace FactoryPlanner.MVVM.Pages
             e.Handled = true;
         }
 
-        private void HandleStartDrawingConnection(ProductionStepView stepView, ProductionStepPortPressedEventArgs e) {
-            connectionStart = e;
-            string repeaterName = e.PortType == PortType.Input ? "InputsContainer" : "OutputsContainer";
+        private void HandleStartDrawingConnection(ProductionStepView stepView, ProductionPortViewModel port) {
+            connectionStart = port;
+            string repeaterName = port.Type == PortType.Input ? "InputsContainer" : "OutputsContainer";
             
             if (stepView.FindName(repeaterName) is ItemsRepeater repeater &&
-                repeater.TryGetElement(e.PortIndex) is FrameworkElement portElement
+                repeater.TryGetElement(port.Index) is FrameworkElement portElement
             ) {
                 Point portTopLeft = portElement.TransformToVisual(MainCanvas).TransformPoint(new Point(0, 0));
                 portPosition = new Point(
@@ -325,9 +331,9 @@ namespace FactoryPlanner.MVVM.Pages
             connectionPath.Data = geometry;
         }
 
-        private void HandleEndDrawingConnection(ProductionStepPortPressedEventArgs connectionEnd) {
+        private void HandleEndDrawingConnection(ProductionPortViewModel port) {
             connectionPath?.Data = null;
-            ViewModel.FormNewConnection(connectionStart, connectionEnd);
+            ViewModel.FormNewConnection(connectionStart, port);
         }
     }
 }

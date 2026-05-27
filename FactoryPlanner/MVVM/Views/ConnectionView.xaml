@@ -15,10 +15,13 @@
               StrokeStartLineCap="Round"
               StrokeThickness="2" />
 
-        <TextBox x:Name="MidpointTextBox"
-                 Text="{Binding Input.PortIndex, Mode=OneWay}"
-                 MinWidth="0"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center" />
+        <Border x:Name="QuantityBox"
+                Background="{ThemeResource SolidBackgroundFillColorQuarternary}"
+                CornerRadius="8"
+                Padding="8"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+            <TextBlock Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}" />
+        </Border>
     </Canvas>
 </UserControl>

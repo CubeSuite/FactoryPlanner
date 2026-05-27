@@ -90,7 +90,7 @@
                                            Margin="8,0"
                                            VerticalAlignment="Center" />
 
-                                <TextBlock Text="{Binding Rate}"
+                                <TextBlock Text="{Binding RateString}"
                                            Grid.Column="2"
                                            Margin="8,0"
                                            VerticalAlignment="Center" />
@@ -155,7 +155,7 @@
                                            Margin="8,0"
                                            VerticalAlignment="Center" />
 
-                                <TextBlock Text="{Binding Rate}"
+                                <TextBlock Text="{Binding RateString}"
                                            Grid.Column="2"
                                            Margin="8,0"
                                            VerticalAlignment="Center" />

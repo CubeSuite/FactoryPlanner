@@ -29,10 +29,10 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <views:ConnectionView Canvas.Left="0"
-                                              Canvas.Top="0"
-                                              Width="{Binding ElementName=MainCanvas, Path=ActualWidth}"
-                                              Height="{Binding ElementName=MainCanvas, Path=ActualHeight}" />
+                        <views:ConnectionView Width="{Binding ElementName=MainCanvas, Path=ActualWidth}"
+                                              Height="{Binding ElementName=MainCanvas, Path=ActualHeight}"
+                                              Canvas.Left="0"
+                                              Canvas.Top="0" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

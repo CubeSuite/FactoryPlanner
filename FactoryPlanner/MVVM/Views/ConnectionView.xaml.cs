@@ -30,6 +30,12 @@ namespace FactoryPlanner.MVVM.Views
             DataContextChanged += OnDataContextChanged;
         }
 
+        // Properties
+
+        private ConnectionViewModel ViewModel => (ConnectionViewModel)DataContext;
+
+        // Listeners
+
         private void OnLoaded(object sender, RoutedEventArgs e) {
             AttachToSteps();
             UpdateConnectionVisual();
@@ -44,6 +50,14 @@ namespace FactoryPlanner.MVVM.Views
             UpdateConnectionVisual();
         }
 
+        private void OnStepPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) {
+            if (e.PropertyName == nameof(ProductionStepViewModel.Position)) {
+                UpdateConnectionVisual();
+            }
+        }
+
+        // Private Functions
+
         private void AttachToSteps() {
             if (DataContext is not ConnectionViewModel connectionVM) return;
 
@@ -57,13 +71,7 @@ namespace FactoryPlanner.MVVM.Views
                 outputVM.PropertyChanged += OnStepPropertyChanged;
             }
         }
-
-        private void OnStepPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) {
-            if (e.PropertyName == nameof(ProductionStepViewModel.Position)) {
-                UpdateConnectionVisual();
-            }
-        }
-
+        
         private void UpdateConnectionVisual() {
             if (DataContext is not ConnectionViewModel connectionVM) return;
 
@@ -97,26 +105,26 @@ namespace FactoryPlanner.MVVM.Views
             ConnectionPath.Data = geometry;
 
             Point midpoint = GetBezierPoint(startPoint, controlPoint1, controlPoint2, endPoint, 0.5);
-            double textBoxWidth = MidpointTextBox.ActualWidth > 0 ? MidpointTextBox.ActualWidth : MidpointTextBox.MinWidth;
-            double textBoxHeight = MidpointTextBox.ActualHeight > 0 ? MidpointTextBox.ActualHeight : 32;
-            Canvas.SetLeft(MidpointTextBox, midpoint.X - (textBoxWidth / 2));
-            Canvas.SetTop(MidpointTextBox, midpoint.Y - (textBoxHeight / 2));
+            double textBoxWidth = QuantityBox.ActualWidth > 0 ? QuantityBox.ActualWidth : QuantityBox.MinWidth;
+            double textBoxHeight = QuantityBox.ActualHeight > 0 ? QuantityBox.ActualHeight : 32;
+            Canvas.SetLeft(QuantityBox, midpoint.X - (textBoxWidth / 2));
+            Canvas.SetTop(QuantityBox, midpoint.Y - (textBoxHeight / 2));
         }
 
-        private ProductionStepView? FindStepView(ConnectedStepViewModel connectedStep) {
+        private ProductionStepView? FindStepView(ProductionPortViewModel connectedStep) {
             if (XamlRoot?.Content is not FrameworkElement root) return null;
 
             return FindDescendant<ProductionStepView>(root)
-                .FirstOrDefault(view => view.DataContext is ProductionStepViewModel vm && vm.ProductionStep == connectedStep.Step);
+                .FirstOrDefault(view => view.DataContext is ProductionStepViewModel vm && vm.ProductionStep == connectedStep.Parent.ProductionStep);
         }
 
-        private Point? GetPortCenter(ConnectedStepViewModel connectedStep) {
+        private Point? GetPortCenter(ProductionPortViewModel connectedStep) {
             ProductionStepView? stepView = FindStepView(connectedStep);
             if (stepView == null) return null;
 
-            string repeaterName = connectedStep.PortType == PortType.Input ? "InputsContainer" : "OutputsContainer";
+            string repeaterName = connectedStep.Type == PortType.Input ? "InputsContainer" : "OutputsContainer";
             if (stepView.FindName(repeaterName) is not ItemsRepeater repeater) return null;
-            if (repeater.TryGetElement(connectedStep.PortIndex) is not FrameworkElement portElement) return null;
+            if (repeater.TryGetElement(connectedStep.Index) is not FrameworkElement portElement) return null;
 
             Point topLeft = portElement.TransformToVisual(this).TransformPoint(new Point(0, 0));
             return new Point(
@@ -140,9 +148,9 @@ namespace FactoryPlanner.MVVM.Views
         }
 
         private static IEnumerable<T> FindDescendant<T>(DependencyObject root) where T : DependencyObject {
-            int childCount = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(root);
+            int childCount = VisualTreeHelper.GetChildrenCount(root);
             for (int i = 0; i < childCount; i++) {
-                DependencyObject child = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(root, i);
+                DependencyObject child = VisualTreeHelper.GetChild(root, i);
                 if (child is T match) {
                     yield return match;
                 }
