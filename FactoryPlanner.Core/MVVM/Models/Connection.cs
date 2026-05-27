@@ -11,23 +11,16 @@ namespace FactoryPlanner.Core.MVVM.Models
         // Fields
         private ProductionPort _input;
         private ProductionPort _output;
-        //private double _quantity;
 
         // Properties
         public ProductionPort Input => _input;
         public ProductionPort Output => _output;
         
-        //public double Quantity {
-        //    get => _quantity;
-        //    set => _quantity = value;
-        //}
-
         // Constructors
 
-        public Connection(ProductionPort input, ProductionPort output/*, double quantity*/) {
+        public Connection(ProductionPort input, ProductionPort output) {
             _input = input;
             _output = output;
-            //_quantity = quantity;
         }
     }
 }

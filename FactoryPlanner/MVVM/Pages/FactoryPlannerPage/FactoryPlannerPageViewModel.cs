@@ -162,7 +162,7 @@ namespace FactoryPlanner.MVVM.Pages
             ProductionPortViewModel inputVM = startVM.Type == PortType.Input ? endVM : startVM;
             ProductionPortViewModel outputVM = startVM.Type == PortType.Input ? startVM : endVM;
 
-            Connection connection = new Connection(inputVM.Port, outputVM.Port/*, quantity*/);
+            Connection connection = new Connection(inputVM.Port, outputVM.Port);
             ProductionLineVM.ProductionLine.Connections.Add(connection);
 
             ConnectionViewModel connectionVM = new ConnectionViewModel(connection, inputVM, outputVM);
@@ -171,12 +171,6 @@ namespace FactoryPlanner.MVVM.Pages
 
             if (outputVM.AreNeedsMetByPrioritySteps()) inputVM.PushResources();
             else outputVM.PullResources();
-
-            //endVM.UpdateConnections(connectionVM);
-            //endVM.Parent.UpdateConnections();
-
-            //if (inputVM.Quantity != 0) inputVM.Parent.UpdateConnections();
-            //if (outputVM.Quantity != 0) outputVM.Parent.UpdateConnections();
 
             ProductionLineVM.Connections.Add(connectionVM);
         }
