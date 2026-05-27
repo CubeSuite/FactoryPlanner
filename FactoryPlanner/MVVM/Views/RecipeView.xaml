@@ -26,7 +26,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-
+            <!--  Name and Machine  -->
             <Grid Grid.ColumnSpan="2"
                   ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
@@ -40,17 +40,19 @@
                            Grid.Column="1"
                            VerticalAlignment="Center" />
                 <ComboBox PlaceholderText="Unknown Machine"
+                          PlaceholderForeground="IndianRed"
                           ItemsSource="{Binding AllMachines}"
                           SelectedItem="{Binding Machine, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                           Grid.Column="2"
-                          DisplayMemberPath="Name"
-                          PlaceholderForeground="IndianRed" />
+                          DisplayMemberPath="Name" />
             </Grid>
 
+            <!--  Craft Time  -->
             <TextBox Text="{Binding CraftTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      PlaceholderText="Craft Duration (s)"
                      Grid.Column="2" />
 
+            <!--  Delete Button  -->
             <Button Style="{StaticResource DangerButtonStyle}"
                     Grid.Column="3"
                     HorizontalAlignment="Stretch"
@@ -58,10 +60,10 @@
                 <FontIcon Glyph="&#xE74D;" />
             </Button>
 
+            <!--  Ingredients List  -->
             <TextBlock Text="Ingredients:"
                        Grid.Row="1" />
 
-            <!--  Ingredients List  -->
             <ItemsRepeater x:Name="IngredientsContainer"
                            ItemsSource="{Binding InputEntries}"
                            Grid.ColumnSpan="2"
@@ -88,7 +90,7 @@
                                            Margin="8,0"
                                            VerticalAlignment="Center" />
 
-                                <TextBlock Text="{Binding Rate}"
+                                <TextBlock Text="{Binding RateString}"
                                            Grid.Column="2"
                                            Margin="8,0"
                                            VerticalAlignment="Center" />
@@ -121,11 +123,11 @@
                     Grid.Row="3"
                     Command="{Binding AddIngredientCommand}" />
 
+            <!--  Outputs List  -->
             <TextBlock Text="Results:"
                        Grid.Column="2"
                        Grid.Row="1" />
 
-            <!--  Outputs List  -->
             <ItemsRepeater x:Name="OutputsContainer"
                            ItemsSource="{Binding OutputEntries}"
                            Grid.Column="2"
@@ -153,7 +155,7 @@
                                            Margin="8,0"
                                            VerticalAlignment="Center" />
 
-                                <TextBlock Text="{Binding Rate}"
+                                <TextBlock Text="{Binding RateString}"
                                            Grid.Column="2"
                                            Margin="8,0"
                                            VerticalAlignment="Center" />

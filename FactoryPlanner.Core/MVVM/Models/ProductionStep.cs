@@ -11,7 +11,7 @@ namespace FactoryPlanner.Core.MVVM.Models
     {
         // Fields
         private int _recipeId;
-        private int _numMachines;
+        private double _numMachines;
         private Point _position;
 
         // Properties
@@ -21,7 +21,7 @@ namespace FactoryPlanner.Core.MVVM.Models
             set => _numMachines = value;
         }
 
-        public int NumMachines {
+        public double NumMachines {
             get => _numMachines;
             set => _numMachines = value;
         }

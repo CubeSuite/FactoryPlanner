@@ -14,7 +14,7 @@
               RowSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
@@ -22,18 +22,17 @@
                 <RowDefinition />
             </Grid.RowDefinitions>
 
-            <!--  Inptus  -->
-            <ItemsRepeater x:Name="InputsContainer"
-                           ItemsSource="{Binding Recipe.Inputs}" />
 
-            <TextBlock Grid.Column="1"
-                       HorizontalAlignment="Center">
-                <TextBlock.Inlines>
-                    <Run Text="{Binding NumMachines}" />
-                    <Run Text=" " />
-                    <Run Text="{Binding MachineNameLabel}" />
-                </TextBlock.Inlines>
-            </TextBlock>
+            <StackPanel Grid.Column="1"
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="8">
+                <TextBox Text="{Binding NumMachines, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         MinWidth="0"
+                         LostFocus="OnNumMachinesBoxLostFocus" />
+                <TextBlock Text="{Binding MachineName}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
 
             <Image Source="{Binding IconPath}"
                    MaxWidth="100"
@@ -41,6 +40,51 @@
                    Grid.Column="1"
                    Grid.Row="1" />
 
+            <!--  Inputs  -->
+            <ItemsRepeater x:Name="InputsContainer"
+                           ItemsSource="{Binding Recipe.Inputs.Keys}"
+                           Grid.RowSpan="2"
+                           VerticalAlignment="Center">
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
+                                BorderBrush="DeepSkyBlue"
+                                BorderThickness="2"
+                                CornerRadius="15"
+                                Width="30"
+                                Height="30"
+                                PointerPressed="OnInputPointerPressed">
+                            <Image Source="{Binding IconPath}"
+                                   Margin="2"
+                                   IsHitTestVisible="False" />
+                        </Border>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+
+
+            <!--  Outputs  -->
+            <ItemsRepeater x:Name="OutputsContainer"
+                           ItemsSource="{Binding Recipe.Outputs.Keys}"
+                           Grid.Column="2"
+                           Grid.RowSpan="2"
+                           VerticalAlignment="Center">
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
+                                BorderBrush="Orange"
+                                BorderThickness="2"
+                                CornerRadius="15"
+                                Width="30"
+                                Height="30"
+                                PointerPressed="OnOutputPointerPressed">
+                            <Image Source="{Binding IconPath}"
+                                   Margin="2"
+                                   IsHitTestVisible="False" />
+                        </Border>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
         </Grid>
     </Border>
 </UserControl>

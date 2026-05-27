@@ -1,4 +1,7 @@
+using FactoryPlanner.Core.MVVM.Models;
 using FactoryPlanner.Core.MVVM.Models.ViewModels;
+using FactoryPlanner.MVVM.Views;
+using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -12,12 +15,12 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -33,6 +36,10 @@ namespace FactoryPlanner.MVVM.Pages
         private ScaleTransform canvasScale = new ScaleTransform();
         private TransformGroup canvasTransform = new TransformGroup();
 
+        private Point portPosition;
+        private Point pointerPosition;
+        private Path? connectionPath;
+
         // Properties
         public FactoryPlannerPageViewModel ViewModel => (FactoryPlannerPageViewModel)DataContext;
 
@@ -46,6 +53,9 @@ namespace FactoryPlanner.MVVM.Pages
             canvasTransform.Children.Add(canvasScale);
             canvasTransform.Children.Add(canvasTranslate);
             MainCanvas.RenderTransform = canvasTransform;
+
+            portPosition = new Point(0, 0);
+            pointerPosition = new Point(0, 0);
         }
 
         // Page Listeners
@@ -53,7 +63,19 @@ namespace FactoryPlanner.MVVM.Pages
         private void OnFactoryPlannerPageLoaded(object sender, RoutedEventArgs e) {
             if (ViewModel != null) {
                 ViewModel.PropertyChanged += OnViewModelPropertyChanged;
-                ViewModel.ProductionLine.Steps.CollectionChanged += OnStepsCollectionChanged;
+                ViewModel.ProductionLineVM.Steps.CollectionChanged += OnStepsCollectionChanged;
+
+                Color lineColour = ViewModel.UserSettings.DarkMode ? Colors.White : Colors.Black;
+                SolidColorBrush lineBrush = new SolidColorBrush(lineColour);
+                connectionPath = new Path() {
+                    Stroke = lineBrush,
+                    StrokeThickness = 2,
+                    StrokeLineJoin = PenLineJoin.Round,
+                    StrokeStartLineCap = PenLineCap.Round,
+                    StrokeEndLineCap = PenLineCap.Round
+                };
+
+                MainCanvas.Children.Insert(0, connectionPath);
             }
 
             RenderGrid();
@@ -70,6 +92,9 @@ namespace FactoryPlanner.MVVM.Pages
                 e.PropertyName == nameof(FactoryPlannerPageViewModel.GridSize)
             ) {
                 RenderGrid();
+            }
+            else if (e.PropertyName == nameof(FactoryPlannerPageViewModel.IsDrawingConnection)) {
+                if (!ViewModel.IsDrawingConnection) connectionPath?.Data = null;
             }
         }
 
@@ -102,6 +127,12 @@ namespace FactoryPlanner.MVVM.Pages
         // Canvas Listeners
 
         private void OnCanvasClicked(object sender, PointerRoutedEventArgs e) {
+            if (FocusManager.GetFocusedElement(XamlRoot) is TextBox) {
+                MainCanvas.Focus(FocusState.Programmatic);
+                e.Handled = true;
+                return;
+            }
+
             PointerPoint pointer = e.GetCurrentPoint(this);
             Point position = pointer.Position;
 
@@ -110,23 +141,22 @@ namespace FactoryPlanner.MVVM.Pages
                 return;
             }
 
-            if (!isPanning && (e.OriginalSource == (object)MainCanvas || e.OriginalSource == (object)GridCanvas)) {
+            if (pointer.Properties.IsRightButtonPressed) {
+                ViewModel.IsDrawingConnection = false;
+                connectionPath?.Data = null;
+                ViewModel.StartPort = null;
+                return;
+            }
+
+            if (!isPanning && (e.OriginalSource == (object)MainCanvas || e.OriginalSource == (object)GridCanvas || e.OriginalSource == (object?)connectionPath)) {
                 ShowAddItemPopup(e);
+                RecipeBox.Focus(FocusState.Keyboard);
             }
         }
 
         private void OnCanvasPointerMoved(object sender, PointerRoutedEventArgs e) {
-            if (!isPanning) return;
-
-            PointerPoint pointer = e.GetCurrentPoint(this);
-            Point currentPoint = pointer.Position;
-
-            canvasTranslate.X += (currentPoint.X - panStartPoint.X);
-            canvasTranslate.Y += (currentPoint.Y - panStartPoint.Y);
-            panStartPoint = currentPoint;
-            
-            RenderGrid();
-            e.Handled = true;
+            if (isPanning) HandlePanMove(e);
+            else if (ViewModel.IsDrawingConnection) DrawConnectionInProgress(e);
         }
 
         private void OnCanvasPointerReleased(object sender, PointerRoutedEventArgs e) {
@@ -156,6 +186,25 @@ namespace FactoryPlanner.MVVM.Pages
 
             RenderGrid();
             e.Handled = true;
+        }
+
+        private void OnProductionStepPortPressed(object sender, ProductionPortViewModel port) {
+            if (sender is not ProductionStepView stepView) return;
+
+            ViewModel.IsDrawingConnection = !ViewModel.IsDrawingConnection;
+
+            if (ViewModel.IsDrawingConnection) {
+                if (connectionPath != null) connectionPath.Data = null;
+                HandleStartDrawingConnection(stepView, port);
+            }
+            else {
+                HandleEndDrawingConnection(port);
+            }
+        }
+
+        private void OnRecipeBoxSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs e) {
+            ViewModel.SelectedRecipe = (RecipeViewModel)e.SelectedItem;
+            ViewModel.RecipeSearchTerm = "";
         }
 
         // Private Functions
@@ -237,6 +286,68 @@ namespace FactoryPlanner.MVVM.Pages
             if (ViewModel != null) {
                 ViewModel.CanvasClickCommand.Execute((viewportPosition, canvasPosition));
             }
+        }
+
+        private void HandlePanMove(PointerRoutedEventArgs e) {
+            PointerPoint pointer = e.GetCurrentPoint(this);
+            Point currentPoint = pointer.Position;
+
+            canvasTranslate.X += (currentPoint.X - panStartPoint.X);
+            canvasTranslate.Y += (currentPoint.Y - panStartPoint.Y);
+            panStartPoint = currentPoint;
+
+            RenderGrid();
+            e.Handled = true;
+        }
+
+        private void HandleStartDrawingConnection(ProductionStepView stepView, ProductionPortViewModel port) {
+            ViewModel.StartPort = port;
+            string repeaterName = port.Type == PortType.Input ? "InputsContainer" : "OutputsContainer";
+            
+            if (stepView.FindName(repeaterName) is ItemsRepeater repeater &&
+                repeater.TryGetElement(port.Index) is FrameworkElement portElement
+            ) {
+                Point portTopLeft = portElement.TransformToVisual(MainCanvas).TransformPoint(new Point(0, 0));
+                portPosition = new Point(
+                    portTopLeft.X + (portElement.ActualWidth / 2),
+                    portTopLeft.Y + (portElement.ActualHeight / 2)
+                );
+            }
+        }
+
+        private void DrawConnectionInProgress(PointerRoutedEventArgs e) {
+            if (!ViewModel.IsDrawingConnection || connectionPath == null) return;
+
+            pointerPosition = e.GetCurrentPoint(MainCanvas).Position;
+
+            double dx = Math.Abs(pointerPosition.X - portPosition.X);
+            double handle = Math.Max(40, dx * 0.5);
+
+            Point controlPoint1 = new Point(portPosition.X + handle, portPosition.Y);
+            Point controlPoint2 = new Point(pointerPosition.X - handle, pointerPosition.Y);
+
+            PathFigure figure = new PathFigure() {
+                StartPoint = portPosition,
+                IsClosed = false,
+                IsFilled = false
+            };
+
+            figure.Segments.Add(new BezierSegment() {
+                Point1 = controlPoint1,
+                Point2 = controlPoint2,
+                Point3 = pointerPosition
+            });
+
+            PathGeometry geometry = new PathGeometry();
+            geometry.Figures.Add(figure);
+
+            connectionPath.Data = geometry;
+        }
+
+        private void HandleEndDrawingConnection(ProductionPortViewModel port) {
+            connectionPath?.Data = null;
+            ViewModel.EndPort = port;
+            ViewModel.FormNewConnection();
         }
     }
 }
