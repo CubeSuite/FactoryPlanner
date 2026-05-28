@@ -39,6 +39,11 @@ namespace FactoryPlanner.Core.Stores
 
         // Public Functions
 
+        public OperationResult CreateAndAdd(string name, string icon, double powerCost, out Machine machine) {
+            machine = new Machine(GetNewMachineID(), userSettings.ActiveGame, name, icon, powerCost);
+            return TryAdd(machine);
+        }
+
         public Machine? GetLatest() {
             return Count == 0 ? null : Values.Last();
         }
@@ -49,9 +54,7 @@ namespace FactoryPlanner.Core.Stores
 
         // Base Class Wrappers
 
-        public OperationResult TryAdd(Machine details) {
-            Machine machine = new Machine(GetNewMachineID(), userSettings.ActiveGame, details);
-
+        public OperationResult TryAdd(Machine machine) {
             OperationResult result = database.TryAdd(machine.ID, machine);
             if (!result) return result;
 

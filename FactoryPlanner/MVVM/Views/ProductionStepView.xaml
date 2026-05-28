@@ -35,10 +35,12 @@
             </StackPanel>
 
             <Image Source="{Binding IconPath}"
-                   MaxWidth="100"
-                   MaxHeight="100"
+                   Width="100"
+                   Height="100"
                    Grid.Column="1"
-                   Grid.Row="1" />
+                   Grid.Row="1"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center" />
 
             <!--  Inputs  -->
             <ItemsRepeater x:Name="InputsContainer"

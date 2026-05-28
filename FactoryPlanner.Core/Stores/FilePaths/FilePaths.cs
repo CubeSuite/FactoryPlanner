@@ -15,6 +15,15 @@ namespace FactoryPlanner.Stores
         public string DataFolder => $"{RootFolder}\\Data";
         public string LogsFolder => $"{RootFolder}\\Logs";
         public string CrashReportsFolder => $"{RootFolder}\\CrashReports";
+        public string ProductionLinesFolder => $"{DataFolder}\\ProductionLines";
+
+        public List<string> Folders => new List<string>() {
+            RootFolder,
+            DataFolder,
+            LogsFolder,
+            CrashReportsFolder,
+            ProductionLinesFolder
+        };
 
         public string TempMetadataFile => $"{RootFolder}\\metadata.json";
         public string SettingsFile => $"{DataFolder}\\Settings.json";

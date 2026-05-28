@@ -20,6 +20,8 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
     public class ProductionStepViewModel : ObservableObject
     {
         // Services & Stores
+        private readonly IProductionStepManager stepManager;
+        private readonly IProductionPortManager portManager;
         private readonly IUserSettings userSettings;
 
         // Fields
@@ -28,7 +30,6 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
         private MachineViewModel _machine;
         private List<ProductionPortViewModel> _inputPorts;
         private List<ProductionPortViewModel> _outputPorts;
-        private double _lastTypedNumMachines;
 
         // Properties
         public ProductionStep ProductionStep => _productionStep;
@@ -49,12 +50,16 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                 _productionStep.NumMachines = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(MachineName));
+                SaveChanges();
             }
         }
 
         public double LastTypedNumMachines {
-            get => _lastTypedNumMachines;
-            set => _lastTypedNumMachines = value;
+            get => _productionStep.LastTypedNumMachines;
+            set {
+                _productionStep.LastTypedNumMachines = value;
+                SaveChanges();
+            }
         }
 
         public bool CalculateUpdates => LastTypedNumMachines == -1;
@@ -74,31 +79,52 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                 if (_productionStep.Position == newPosition) return;
                 _productionStep.Position = newPosition;
                 OnPropertyChanged();
+                SaveChanges();
             }
         }
 
-        public List<ProductionPortViewModel> InputPorts => _inputPorts;
-        public List<ProductionPortViewModel> OutputPorts => _outputPorts;
+        public List<ProductionPortViewModel> InputPorts {
+            get => _inputPorts;
+            set {
+                _inputPorts = value;
+                _productionStep.InputPortIDs = _inputPorts.Select(port => port.ID).ToHashSet();
+                SaveChanges();
+            }
+        }
+
+        public List<ProductionPortViewModel> OutputPorts {
+            get => _outputPorts;
+            set {
+                _outputPorts = value;
+                _productionStep.OutputPortIDs = _outputPorts.Select(port => port.ID).ToHashSet();
+                SaveChanges();
+            }
+        }
 
         // Constructors
 
         public ProductionStepViewModel(ProductionStep step, IServiceProvider serviceProvider) {
+            stepManager = serviceProvider.GetRequiredService<IProductionStepManager>();
+            portManager = serviceProvider.GetRequiredService<IProductionPortManager>();
             userSettings = serviceProvider.GetRequiredService<IUserSettings>();
             userSettings.SettingChanged += OnSettingChanged;
 
             _productionStep = step;
-            _recipe = new RecipeViewModel(step.RecipeId, serviceProvider);
+            _recipe = new RecipeViewModel(step.RecipeID, serviceProvider);
             _machine = new MachineViewModel(_recipe.Machine ?? new Machine() { Name = "Unknown" });
             _inputPorts = new List<ProductionPortViewModel>();
             _outputPorts= new List<ProductionPortViewModel>();
-            _lastTypedNumMachines = -1;
 
-            for (int i = 0; i < Recipe.Inputs.Count; i++) {
-                InputPorts.Add(new ProductionPortViewModel(new ProductionPort(step, PortType.Input, i), this));
+            foreach(int id in step.InputPortIDs) {
+                if (portManager.TryGet(id, out ProductionPort port)) {
+                    _inputPorts.Add(new ProductionPortViewModel(port, this));
+                }
             }
 
-            for (int i = 0; i < Recipe.Outputs.Count; i++) {
-                OutputPorts.Add(new ProductionPortViewModel(new ProductionPort(step, PortType.Output, i), this));
+            foreach (int id in step.OutputPortIDs) {
+                if (portManager.TryGet(id, out ProductionPort port)) {
+                    _outputPorts.Add(new ProductionPortViewModel(port, this));
+                }
             }
         }
 
@@ -141,6 +167,10 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                 PortType.Output => OutputPorts.FirstOrDefault(port => port.Item == item),
                 _ => null
             };
+        }
+
+        public void SaveChanges() {
+            stepManager.TryUpdate(_productionStep);
         }
     }
 }

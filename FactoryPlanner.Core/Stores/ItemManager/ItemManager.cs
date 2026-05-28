@@ -39,16 +39,9 @@ namespace FactoryPlanner.Core.Stores
 
         // Public Functions
 
-        public OperationResult CreateAndAdd(string name, string iconPath) {
-            Item item = new Item(GetNewItemID(), userSettings.ActiveGame, name, iconPath);
-
-            OperationResult result = TryAdd(item);
-            if (!result) return result;
-
-            result = TryGet(item.ID, out item);
-            if (!result) return result;
-
-            return new OperationResult(true, null, false);
+        public OperationResult CreateAndAdd(string name, string iconPath, out Item item) {
+            item = new Item(GetNewItemID(), userSettings.ActiveGame, name, iconPath);
+            return TryAdd(item);
         }
 
         public Item? GetLatest() {

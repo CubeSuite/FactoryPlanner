@@ -1,4 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using FactoryPlanner.Core.Stores;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +12,8 @@ using Windows.Networking.Connectivity;
 
 namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 {
-    public class ProductionPortViewModel : ObservableObject {
+    public class ProductionPortViewModel : ObservableObject 
+    {
         // Fields
         private ProductionPort _port;
         private ProductionStepViewModel _parent;
@@ -19,6 +22,7 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 
         // Properties
         public ProductionPort Port => _port;
+        public int ID => _port.ID;
         public ProductionStepViewModel Parent => _parent;
         public PortType Type => _port.Type;
         public int Index => _port.Index;
@@ -123,6 +127,5 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                 connection.UpdateConnections(this);
             }
         }
-
     }
 }

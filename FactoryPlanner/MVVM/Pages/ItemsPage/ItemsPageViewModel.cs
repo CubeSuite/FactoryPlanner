@@ -198,13 +198,8 @@ namespace FactoryPlanner.MVVM.Pages
         }
 
         private void TryAddItem(string name, string icon) {
-            itemManager.CreateAndAdd(name, icon);
-
-            Item? newItem = itemManager.GetLatest();
-            if (newItem != null) {
-                Items.Add(new ItemViewModel(newItem));
-            }
-
+            if (!itemManager.CreateAndAdd(name, icon, out Item item)) return;
+            Items.Add(new ItemViewModel(item));
             ClearInputs();
         }
 

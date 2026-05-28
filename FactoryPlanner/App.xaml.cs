@@ -120,6 +120,10 @@ namespace FactoryPlanner
             services.AddSingleton<IItemManager, ItemManager>();
             services.AddSingleton<IRecipeManager, RecipeManager>();
             services.AddSingleton<IMachineManager, MachineManager>();
+            services.AddSingleton<IProductionLineManager, ProductionLineManager>();
+            services.AddSingleton<IProductionStepManager, ProductionStepManager>();
+            services.AddSingleton<IProductionPortManager, ProductionPortManager>();
+            services.AddSingleton<IConnectionManager, ConnectionManager>();
 
             services.AddSingleton(typeof(IFileUtils), testFileUtils ? typeof(TestFileUtils) : typeof(FileUtils));
 

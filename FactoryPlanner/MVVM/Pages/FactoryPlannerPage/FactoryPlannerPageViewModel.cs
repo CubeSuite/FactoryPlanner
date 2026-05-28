@@ -31,6 +31,10 @@ namespace FactoryPlanner.MVVM.Pages
         private readonly IRecipeManager recipeManager;
         private readonly IUserSettings _userSettings;
         private readonly ISearchService searchService;
+        private readonly IProductionLineManager lineManager;
+        private readonly IProductionStepManager stepManager;
+        private readonly IProductionPortManager portManager;
+        private readonly IConnectionManager connectionManager;
 
         // Fields
         private Dictionary<string, FactoryIconSource> iconSourceMap;
@@ -125,6 +129,10 @@ namespace FactoryPlanner.MVVM.Pages
             recipeManager = serviceProvider.GetRequiredService<IRecipeManager>();
             _userSettings = serviceProvider.GetRequiredService<IUserSettings>();
             searchService = serviceProvider.GetRequiredService<ISearchService>();
+            lineManager = serviceProvider.GetRequiredService<IProductionLineManager>();
+            stepManager = serviceProvider.GetRequiredService<IProductionStepManager>();
+            portManager = serviceProvider.GetRequiredService<IProductionPortManager>();
+            connectionManager = serviceProvider.GetRequiredService<IConnectionManager>();
 
             iconSourceMap = EnumExtensions.GetValuesWithDescriptions<FactoryIconSource>();
             _allRecipes = new List<RecipeViewModel>();
@@ -139,8 +147,7 @@ namespace FactoryPlanner.MVVM.Pages
             SelectedRecipe = null;
             RecipeSearchTerm = "";
 
-            // ToDo: Load root production line
-            ProductionLineVM = new ProductionLineViewModel(new ProductionLine());
+            ProductionLineVM = new ProductionLineViewModel(lineManager.GetRootLine(), serviceProvider);
         }
 
         // Listeners
@@ -160,8 +167,24 @@ namespace FactoryPlanner.MVVM.Pages
 
         partial void OnSelectedRecipeChanged(RecipeViewModel? value) {
             if (value == null) return;
-            ProductionStep step = new ProductionStep(value.Recipe, LastCanvasClickPosition);
+            if (!stepManager.CreateAndAdd(value.Recipe, LastCanvasClickPosition, out ProductionStep step)) return;
             ProductionStepViewModel stepVM = new ProductionStepViewModel(step, serviceProvider);
+
+            List<ProductionPortViewModel> inputs = new List<ProductionPortViewModel>();
+            for (int i = 0; i < value.Inputs.Count; i++) {
+                if (!portManager.CreateAndAdd(step, PortType.Input, i, out ProductionPort port)) continue;
+                inputs.Add(new ProductionPortViewModel(port, stepVM));
+            }
+            
+            List<ProductionPortViewModel> outputs = new List<ProductionPortViewModel>();
+            for (int i = 0; i < value.Outputs.Count; i++) {
+                if (!portManager.CreateAndAdd(step, PortType.Output, i, out ProductionPort port)) continue;
+                outputs.Add(new ProductionPortViewModel(port, stepVM));
+            }
+
+            stepVM.InputPorts = inputs;
+            stepVM.OutputPorts = outputs;
+
             ProductionLineVM.Steps.Add(stepVM);
             AddStepPopupIsOpen = false;
 
@@ -217,13 +240,14 @@ namespace FactoryPlanner.MVVM.Pages
         // Public Functions
 
         public void FormNewConnection() {
+            if (StartPort == null || EndPort == null) return;
             ProductionPortViewModel inputVM = StartPort.Type == PortType.Input ? EndPort : StartPort;
             ProductionPortViewModel outputVM = StartPort.Type == PortType.Input ? StartPort : EndPort;
 
-            Connection connection = new Connection(inputVM.Port, outputVM.Port);
-            ProductionLineVM.ProductionLine.Connections.Add(connection);
+            if (!connectionManager.CreateAndAdd(inputVM.Port, outputVM.Port, out Connection connection)) return;
+            ProductionLineVM.ProductionLine.Connections.Add(connection.ID);
 
-            ConnectionViewModel connectionVM = new ConnectionViewModel(connection, inputVM, outputVM);
+            ConnectionViewModel connectionVM = new ConnectionViewModel(connection, inputVM, outputVM, serviceProvider);
             inputVM.Connections.Add(connectionVM);
             outputVM.Connections.Add(connectionVM);
 
