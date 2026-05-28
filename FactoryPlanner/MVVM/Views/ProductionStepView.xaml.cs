@@ -114,7 +114,6 @@ namespace FactoryPlanner.MVVM.Views
 
             if (portIndex < 0) return;
 
-            ProductionPort port = new ProductionPort(stepVM.ProductionStep, portType, portIndex);
             ProductionPortViewModel? portVM = portType switch {
                 PortType.Input => stepVM.InputPorts[portIndex],
                 PortType.Output => stepVM.OutputPorts[portIndex],

@@ -9,89 +9,86 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Foundation;
 
 namespace FactoryPlanner.Core.Stores
 {
-    public class RecipeManager : ObjectCache<int, Recipe>, IRecipeManager 
+    public class ProductionStepManager : ObjectCache<int, ProductionStep>, IProductionStepManager
     {
         // Services & Stores
         private readonly IUserSettings userSettings;
 
         // Fields
-        private IObjectRepository<int, Recipe> database;
+        private IObjectRepository<int, ProductionStep> database;
 
         // Constructors
 
-        public RecipeManager(IServiceProvider serviceProvider) : base(serviceProvider) {
+        public ProductionStepManager(IServiceProvider serviceProvider) : base(serviceProvider) {
             userSettings = serviceProvider.GetRequiredService<IUserSettings>();
-            database = new LocalObjectRepository<int, Recipe>(serviceProvider);
+            database = new LocalObjectRepository<int, ProductionStep>(serviceProvider);
 
             userSettings.SettingChanged += OnSettingChanged;
-            
+
             RefreshCache();
         }
 
         // Listeners
 
         private void OnSettingChanged(string setting) {
-            if (setting == nameof(userSettings.ActiveGame)) RefreshCache();
+            if (setting == nameof(IUserSettings.ActiveGame)) RefreshCache();
         }
 
         // Public Functions
 
-        public OperationResult CreateAndAdd(out Recipe recipe) {
-            recipe = new Recipe(GetNewRecipeID(), userSettings.ActiveGame);
-            return TryAdd(recipe);
-        }
-
-        public Recipe? GetLatest() {
-            return Count == 0 ? null : Values.Last();
+        public OperationResult CreateAndAdd(Recipe recipe, Point position, out ProductionStep step) {
+            step = new ProductionStep(GetNewStepID(), userSettings.ActiveGame, recipe, position);
+            return TryAdd(step);
         }
 
         // Base Class Wrappers
 
-        public OperationResult TryAdd(Recipe recipe) {
-            OperationResult result = database.TryAdd(recipe.ID, recipe);
+        public OperationResult TryAdd(ProductionStep step) {
+            OperationResult result = database.TryAdd(step.ID, step);
             if (!result) return result;
 
-            return TryAdd(recipe.ID, recipe);
-        }
-        
-        public OperationResult TryUpdate(Recipe recipe) {
-            OperationResult result = database.TryUpdate(recipe.ID, recipe);
-            if (!result) return result;
-
-            return TryUpdate(recipe.ID, recipe);
+            return TryAdd(step.ID, step);
         }
 
-        public OperationResult TryDelete(Recipe recipe) {
-            OperationResult result = database.TryDelete(recipe.ID);
+        public OperationResult TryUpdate(ProductionStep step) {
+            OperationResult result = database.TryUpdate(step.ID, step);
             if (!result) return result;
 
-            return TryDelete(recipe.ID);
+            return TryUpdate(step.ID, step);
+        }
+
+        public OperationResult TryDelete(ProductionStep step) {
+            OperationResult result = database.TryDelete(step.ID);
+            if (!result) return result;
+
+            return TryUpdate(step.ID, step);
         }
 
         public override OperationResult Clear() {
             OperationResult result = database.Clear();
             if (!result) return result;
-            
+
             return base.Clear();
         }
 
         // Private Functions
 
+        private int GetNewStepID() {
+            return database.Count == 0 ? 0 : database.Keys.Max() + 1;
+        }
+
         private void RefreshCache() {
             base.Clear();
-            foreach (Recipe recipe in database.Query(
+            foreach (ProductionStep step in database.Query(
                 $"SELECT * FROM {database.TableName} " +
                 $"WHERE _gameId={userSettings.ActiveGame}")
             ) {
-                TryAdd(recipe.ID, recipe);
+                TryAdd(step.ID, step);
             }
-        }
-
-        private int GetNewRecipeID() {
-            return database.Count == 0 ? 0 : database.Keys.Max() + 1;
         }
     }
 }

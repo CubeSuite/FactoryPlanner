@@ -12,8 +12,9 @@ namespace FactoryPlanner.Core.Stores
     public interface IRecipeManager : IObjectCache<int, Recipe>
     {
         // Public Functions
-        Recipe CreateAndAdd();
+        OperationResult CreateAndAdd(out Recipe recipe);
         Recipe? GetLatest();
+
         OperationResult TryAdd(Recipe recipe);
         OperationResult TryUpdate(Recipe recipe);
         OperationResult TryDelete(Recipe recipe);

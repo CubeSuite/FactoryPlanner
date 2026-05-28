@@ -76,7 +76,7 @@ namespace FactoryPlanner.MVVM.Pages
 
         [RelayCommand]
         private void CreateNewRecipe() {
-            Recipe recipe = recipeManager.CreateAndAdd();
+            if (!recipeManager.CreateAndAdd(out Recipe recipe)) return;
             RecipeViewModel viewModel = CreateRecipeViewModel(recipe, serviceProvider);
             recipes.Add(viewModel);
             AddRecipeToGUIAsync(viewModel);

@@ -154,14 +154,7 @@ namespace FactoryPlanner.Services
         }
 
         public async Task CreateProgramFolderStructure() {
-            List<string> folders = [
-                programData.FilePaths.RootFolder,
-                programData.FilePaths.DataFolder,
-                programData.FilePaths.LogsFolder,
-                programData.FilePaths.CrashReportsFolder
-            ];
-
-            foreach (string folder in folders) {
+            foreach (string folder in programData.FilePaths.Folders) {
                 FolderResult result = await TryGetOrCreateFolderAsync(folder);
                 if (!result.Success) {
                     await dialogService.ShowMessage(

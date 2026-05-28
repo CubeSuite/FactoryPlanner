@@ -62,9 +62,9 @@ namespace FactoryPlanner.Core.MVVM.Models
             _powerCost = details.PowerCost;
         }
 
-        public Machine(string name, string iconPath, double powerCost) {
-            _id = -1;
-            _gameId = -1;
+        public Machine(int id, int gameId, string name, string iconPath, double powerCost) {
+            _id = id;
+            _gameId = gameId;
             _name = name;
             _iconPath = iconPath;
             _powerCost = powerCost;

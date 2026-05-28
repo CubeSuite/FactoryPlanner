@@ -64,6 +64,10 @@ namespace FactoryPlanner.MVVM.Pages
             if (ViewModel != null) {
                 ViewModel.PropertyChanged += OnViewModelPropertyChanged;
                 ViewModel.ProductionLineVM.Steps.CollectionChanged += OnStepsCollectionChanged;
+                foreach(ProductionStepViewModel stepVM in ViewModel.ProductionLineVM.Steps) {
+                    _ = UpdateStepPosition(stepVM);
+                    stepVM.PropertyChanged += OnStepPropertyChanged;
+                }
 
                 Color lineColour = ViewModel.UserSettings.DarkMode ? Colors.White : Colors.Black;
                 SolidColorBrush lineBrush = new SolidColorBrush(lineColour);

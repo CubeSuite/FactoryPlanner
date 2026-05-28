@@ -99,7 +99,7 @@ namespace FactoryPlanner.MVVM.Pages
         private void AddMachine() {
             if (!ValidateInputs()) return;
 
-            if (!IsMachineSelected) TryAddItem(MachineName, IconPath, PowerCost);
+            if (!IsMachineSelected) TryAddMachine(MachineName, IconPath, PowerCost);
             else UpdateSelectedMachine();
         }
 
@@ -167,7 +167,7 @@ namespace FactoryPlanner.MVVM.Pages
                 string name = image.DisplayName;
                 if (machineManager.IsNameTaken(name)) continue;
 
-                TryAddItem(name, image.Path, 0);
+                TryAddMachine(name, image.Path, 0);
             }
         }
 
@@ -200,12 +200,9 @@ namespace FactoryPlanner.MVVM.Pages
             return true;
         }
 
-        private void TryAddItem(string name, string icon, double powerCost) {
-            machineManager.TryAdd(new Machine(name, icon, powerCost));
-
-            Machine? newItem = machineManager.GetLatest(); // Fetch ID
-            if (newItem != null) {
-                Machines.Add(new MachineViewModel(newItem));
+        private void TryAddMachine(string name, string icon, double powerCost) {
+            if (machineManager.CreateAndAdd(name, icon, powerCost, out Machine machine)) {
+                Machines.Add(new MachineViewModel(machine));
             }
 
             ClearInputs();

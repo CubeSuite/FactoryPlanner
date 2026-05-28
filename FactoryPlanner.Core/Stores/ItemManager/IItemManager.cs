@@ -12,7 +12,7 @@ namespace FactoryPlanner.Core.Stores
     public interface IItemManager : IObjectCache<int, Item>
     {
         // Public Functions
-        public OperationResult CreateAndAdd(string name, string iconPath);
+        public OperationResult CreateAndAdd(string name, string iconPath, out Item item);
         public OperationResult TryUpdate(Item item);
         public OperationResult TryDelete(Item item);
         public Item? GetLatest();

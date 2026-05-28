@@ -1,12 +1,17 @@
+using System.Collections.Generic;
+
 namespace FactoryPlanner.Stores.Interfaces
 {
     public interface IFilePaths
     {
         // Properties
-        string CrashReportsFolder { get; }
+        string RootFolder { get; }
         string DataFolder { get; }
         string LogsFolder { get; }
-        string RootFolder { get; }
+        string CrashReportsFolder { get; }
+        string ProductionLinesFolder { get; }
+
+        List<string> Folders { get; }
 
         string TempMetadataFile { get; }
         string SettingsFile { get; }
