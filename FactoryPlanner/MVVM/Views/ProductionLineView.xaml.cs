@@ -17,14 +17,13 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-using static FactoryPlanner.Core.MVVM.Models.ProductionPort;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace FactoryPlanner.MVVM.Views
 {
-    public sealed partial class ProductionStepView : UserControl
+    public sealed partial class ProductionLineView : UserControl
     {
         // Fields
         private bool isDragging = false;
@@ -33,11 +32,11 @@ namespace FactoryPlanner.MVVM.Views
 
         // Properties
 
-        private ProductionStepViewModel ViewModel => (ProductionStepViewModel)DataContext;
+        private ProductionLineViewModel ViewModel => (ProductionLineViewModel)DataContext;
 
         // Constructors
 
-        public ProductionStepView() {
+        public ProductionLineView() {
             InitializeComponent();
         }
 
@@ -48,32 +47,32 @@ namespace FactoryPlanner.MVVM.Views
         // Listeners
 
         private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs e) {
-            if (e.NewValue is ProductionStepViewModel step) {
-                step.DuplicateRequested += OnFlyoutButtonClicked;
-                step.DeleteRequested += OnFlyoutButtonClicked;
+            if (e.NewValue is ProductionLineViewModel step) {
+                step.LineDuplicationRequested += OnFlyoutButtonClicked;
+                step.LineDeletionRequested += OnFlyoutButtonClicked;
             }
         }
 
-        private void OnFlyoutButtonClicked(ProductionStepViewModel step) {
+        private void OnFlyoutButtonClicked(ProductionLineViewModel step) {
             OptionsFlyout.Hide();
             DeleteFlyout.Hide();
         }
 
         private void OnPointerPressed(object sender, PointerRoutedEventArgs e) {
-            if (DataContext is not ProductionStepViewModel stepVM) return;
+            if (DataContext is not ProductionLineViewModel lineVM) return;
 
             PointerPoint pointer = e.GetCurrentPoint(Parent as UIElement);
             if (pointer.Properties.IsLeftButtonPressed) {
                 isDragging = true;
                 dragStartPoint = pointer.Position;
-                initialPosition = stepVM.Position;
+                initialPosition = lineVM.Position;
                 CapturePointer(e.Pointer);
                 e.Handled = true;
             }
         }
 
         private void OnPointerMoved(object sender, PointerRoutedEventArgs e) {
-            if (!isDragging || DataContext is not ProductionStepViewModel stepVM) return;
+            if (!isDragging || DataContext is not ProductionLineViewModel lineVM) return;
 
             PointerPoint pointer = e.GetCurrentPoint(Parent as UIElement);
             Point currentPoint = pointer.Position;
@@ -86,7 +85,7 @@ namespace FactoryPlanner.MVVM.Views
                 initialPosition.Y + deltaY
             );
 
-            stepVM.Position = newPosition;
+            lineVM.Position = newPosition;
             e.Handled = true;
         }
 
@@ -97,6 +96,10 @@ namespace FactoryPlanner.MVVM.Views
             ReleasePointerCapture(e.Pointer);
             ViewModel.SaveChanges();
             e.Handled = true;
+        }
+
+        private void OnDoubleTapped(object sender, DoubleTappedRoutedEventArgs e) {
+            ViewModel.RaiseShowLineRequested();
         }
 
         private void OnInputPointerPressed(object sender, PointerRoutedEventArgs e) {
@@ -112,17 +115,15 @@ namespace FactoryPlanner.MVVM.Views
                 e.Handled = true;
             }
         }
-        
-        private void OnNumMachinesBoxLostFocus(object sender, RoutedEventArgs e) {
-            ViewModel.LastTypedNumMachines = ViewModel.NumMachines;
-            ViewModel.UpdateConnections();
+
+        private void OnNameBoxLostFocus(object sender, RoutedEventArgs e) {
             ViewModel.SaveChanges();
         }
 
         // Private Functions
 
         private void RaisePortPressed(object sender, PortType portType) {
-            if (sender is not UIElement element || DataContext is not ProductionStepViewModel stepVM) return;
+            if (sender is not UIElement element || DataContext is not ProductionLineViewModel lineVM) return;
 
             int portIndex = portType switch {
                 PortType.Input => InputsContainer.GetElementIndex(element),
@@ -133,8 +134,8 @@ namespace FactoryPlanner.MVVM.Views
             if (portIndex < 0) return;
 
             ProductionPortViewModel? portVM = portType switch {
-                PortType.Input => stepVM.InputPorts[portIndex],
-                PortType.Output => stepVM.OutputPorts[portIndex],
+                PortType.Input => lineVM.InputPorts[portIndex],
+                PortType.Output => lineVM.OutputPorts[portIndex],
                 _ => null
             };
 

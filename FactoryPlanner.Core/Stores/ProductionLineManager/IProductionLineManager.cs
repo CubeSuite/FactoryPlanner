@@ -7,7 +7,7 @@ namespace FactoryPlanner.Core.Stores
     public interface IProductionLineManager : IObjectCache<int, ProductionLine>
     {
         // Public Functions
-        OperationResult CreateAndAdd(out ProductionLine productionLine);
+        OperationResult CreateAndAdd(out ProductionLine productionLine, int parentId);
         ProductionLine GetRootLine();
 
         OperationResult TryAdd(ProductionLine line);

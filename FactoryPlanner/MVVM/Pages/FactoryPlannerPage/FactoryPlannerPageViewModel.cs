@@ -11,6 +11,7 @@ using FactoryPlanner.Services.Interfaces;
 using FactoryPlanner.Stores.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Media.Animation;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,6 +19,7 @@ using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Contacts.DataProvider;
 using Windows.Foundation;
 using Windows.Media.Audio;
 using WinRT;
@@ -44,7 +46,8 @@ namespace FactoryPlanner.MVVM.Pages
         // Properties
         public IUserSettings UserSettings => _userSettings;
 
-        public ProductionLineViewModel ProductionLineVM { get; set; }
+        [ObservableProperty]
+        public partial ProductionLineViewModel CurrentProductionLine { get; set; }
 
         [ObservableProperty]
         public partial string SelectedIconSource { get; set; }
@@ -118,9 +121,11 @@ namespace FactoryPlanner.MVVM.Pages
 
         [ObservableProperty]
         public partial ProductionPortViewModel? StartPort { get; set; }
+        public bool IsStartPortExposed { get; set; }
 
         [ObservableProperty]
         public partial ProductionPortViewModel? EndPort { get; set; }
+        public bool IsEndPortExposed { get; set; }
 
         // Constructors
 
@@ -147,7 +152,10 @@ namespace FactoryPlanner.MVVM.Pages
             SelectedRecipe = null;
             RecipeSearchTerm = "";
 
-            ProductionLineVM = new ProductionLineViewModel(lineManager.GetRootLine(), serviceProvider);
+            ProductionLineViewModel line = new ProductionLineViewModel(lineManager.GetRootLine(), serviceProvider);
+            line.StepDuplicationRequested += OnProductionStepDuplicationRequested;
+            line.ShowLineRequested += OnShowProductionLineRequested;
+            CurrentProductionLine = line;
         }
 
         // Listeners
@@ -167,30 +175,32 @@ namespace FactoryPlanner.MVVM.Pages
 
         partial void OnSelectedRecipeChanged(RecipeViewModel? value) {
             if (value == null) return;
-            if (!stepManager.CreateAndAdd(value.Recipe, LastCanvasClickPosition, out ProductionStep step)) return;
-            ProductionStepViewModel stepVM = new ProductionStepViewModel(step, serviceProvider);
+            ProductionStepViewModel? stepVM = CreateProductionStep(value, LastCanvasClickPosition);
+            //if (!stepManager.CreateAndAdd(value.Recipe, LastCanvasClickPosition, out ProductionStep step)) return;
+            //ProductionStepViewModel stepVM = new ProductionStepViewModel(step, serviceProvider);
 
-            List<ProductionPortViewModel> inputs = new List<ProductionPortViewModel>();
-            for (int i = 0; i < value.Inputs.Count; i++) {
-                if (!portManager.CreateAndAdd(step, PortType.Input, i, out ProductionPort port)) continue;
-                inputs.Add(new ProductionPortViewModel(port, stepVM));
-            }
-            
-            List<ProductionPortViewModel> outputs = new List<ProductionPortViewModel>();
-            for (int i = 0; i < value.Outputs.Count; i++) {
-                if (!portManager.CreateAndAdd(step, PortType.Output, i, out ProductionPort port)) continue;
-                outputs.Add(new ProductionPortViewModel(port, stepVM));
-            }
+            //List<ProductionPortViewModel> inputs = new List<ProductionPortViewModel>();
+            //for (int i = 0; i < value.Inputs.Count; i++) {
+            //    if (!portManager.CreateAndAdd(step, PortType.Input, i, out ProductionPort port)) continue;
+            //    inputs.Add(new ProductionPortViewModel(port, stepVM));
+            //}
 
-            stepVM.InputPorts = inputs;
-            stepVM.OutputPorts = outputs;
+            //List<ProductionPortViewModel> outputs = new List<ProductionPortViewModel>();
+            //for (int i = 0; i < value.Outputs.Count; i++) {
+            //    if (!portManager.CreateAndAdd(step, PortType.Output, i, out ProductionPort port)) continue;
+            //    outputs.Add(new ProductionPortViewModel(port, stepVM));
+            //}
 
-            ProductionLineVM.Steps.Add(stepVM);
+            //stepVM.InputPorts = inputs;
+            //stepVM.OutputPorts = outputs;
+
+            //CurrentProductionLine.Steps.Add(stepVM);
+            //AddStepPopupIsOpen = false;
+
             AddStepPopupIsOpen = false;
-
             _ = ResetSelectedRecipeAsync();
 
-            if (IsDrawingConnection && StartPort != null) {
+            if (stepVM != null && IsDrawingConnection && StartPort != null) {
                 PortType targetType = StartPort.Type == PortType.Input ? PortType.Output : PortType.Input;
                 ProductionPortViewModel? port = stepVM.FindPortForItem(targetType, StartPort.Item);
                 if (port == null) {
@@ -208,11 +218,36 @@ namespace FactoryPlanner.MVVM.Pages
             OnPropertyChanged(nameof(FilteredByItem));
         }
 
+        private void OnProductionStepDuplicationRequested(ProductionStepViewModel requester) {
+            Point position = new Point(requester.Position.X, requester.Position.Y - 160);
+            CreateProductionStep(requester.Recipe, position);
+        }
+
+        private void OnProductionStepDeleteRequested(ProductionStepViewModel requester) {
+            CurrentProductionLine.DeleteStep(requester);
+        }
+
+        private void OnShowProductionLineRequested(ProductionLineViewModel line) {
+            CurrentProductionLine = line;
+        }
+
         // Commands
 
         [RelayCommand]
-        private void UpALevelClicked() {
+        private void UpALevel() {
+            if (CurrentProductionLine.Parent != null) {
+                CurrentProductionLine = CurrentProductionLine.Parent;
+            }
+            else if (lineManager.CreateAndAdd(out ProductionLine line, -1)) {
+                ProductionLineViewModel lineVM = new ProductionLineViewModel(line, serviceProvider);
+                CurrentProductionLine.ParentID = line.ID;
+                CurrentProductionLine.Parent = lineVM;
 
+                lineVM.SubLines.Add(CurrentProductionLine);
+                lineVM.StepDuplicationRequested += OnProductionStepDuplicationRequested;
+                lineVM.ShowLineRequested += OnShowProductionLineRequested;
+                CurrentProductionLine = lineVM;
+            }
         }
 
         [RelayCommand]
@@ -224,7 +259,10 @@ namespace FactoryPlanner.MVVM.Pages
 
         [RelayCommand]
         private void CreateNewProductionLine() {
-
+            if (!lineManager.CreateAndAdd(out ProductionLine newLine, CurrentProductionLine.ID)) return;
+            ProductionLineViewModel newLineVM = new ProductionLineViewModel(newLine, CurrentProductionLine, serviceProvider);
+            CurrentProductionLine.SubLines.Add(newLineVM);
+            CurrentProductionLine = newLineVM;
         }
 
         [RelayCommand]
@@ -241,11 +279,17 @@ namespace FactoryPlanner.MVVM.Pages
 
         public void FormNewConnection() {
             if (StartPort == null || EndPort == null) return;
+
+            if(CurrentProductionLine.DoesConnectionAlreadyExist(StartPort.ID, EndPort.ID, out ConnectionViewModel? existingConnection) && existingConnection != null) {
+                DeleteConnection(existingConnection);
+                return;
+            }
+
             ProductionPortViewModel inputVM = StartPort.Type == PortType.Input ? EndPort : StartPort;
             ProductionPortViewModel outputVM = StartPort.Type == PortType.Input ? StartPort : EndPort;
 
             if (!connectionManager.CreateAndAdd(inputVM.Port, outputVM.Port, out Connection connection)) return;
-            ProductionLineVM.ProductionLine.Connections.Add(connection.ID);
+            CurrentProductionLine.ProductionLine.Connections.Add(connection.ID);
 
             ConnectionViewModel connectionVM = new ConnectionViewModel(connection, inputVM, outputVM, serviceProvider);
             inputVM.Connections.Add(connectionVM);
@@ -254,7 +298,10 @@ namespace FactoryPlanner.MVVM.Pages
             if (outputVM.AreNeedsMetByPrioritySteps()) inputVM.PushResources();
             else outputVM.PullResources();
 
-            ProductionLineVM.Connections.Add(connectionVM);
+            StartPort.IsExposed = IsStartPortExposed;
+            EndPort.IsExposed = IsEndPortExposed;
+
+            CurrentProductionLine.Connections.Add(connectionVM);
 
             StartPort = null;
             EndPort = null;
@@ -270,6 +317,39 @@ namespace FactoryPlanner.MVVM.Pages
 
         private async Task SearchForRecipesAsync() {
             FilteredRecipes = await searchService.Search(FilteredByItem, RecipeSearchTerm, RecipeViewModel.GetSearchSelectors());
+        }
+
+        private ProductionStepViewModel? CreateProductionStep(RecipeViewModel recipe, Point point) {
+            if (!stepManager.CreateAndAdd(recipe.Recipe, point, out ProductionStep step)) return null;
+            ProductionStepViewModel stepVM = new ProductionStepViewModel(step, serviceProvider);
+
+            stepVM.DuplicateRequested += OnProductionStepDuplicationRequested;
+            stepVM.DeleteRequested += OnProductionStepDeleteRequested;
+
+            List<ProductionPortViewModel> inputs = new List<ProductionPortViewModel>();
+            for (int i = 0; i < recipe.Inputs.Count; i++) {
+                if (!portManager.CreateAndAdd(step, PortType.Input, i, out ProductionPort port)) continue;
+                inputs.Add(new ProductionPortViewModel(port, stepVM, serviceProvider));
+            }
+
+            List<ProductionPortViewModel> outputs = new List<ProductionPortViewModel>();
+            for (int i = 0; i < recipe.Outputs.Count; i++) {
+                if (!portManager.CreateAndAdd(step, PortType.Output, i, out ProductionPort port)) continue;
+                outputs.Add(new ProductionPortViewModel(port, stepVM, serviceProvider));
+            }
+
+            stepVM.InputPorts = inputs;
+            stepVM.OutputPorts = outputs;
+
+            CurrentProductionLine.Steps.Add(stepVM);
+            return stepVM;
+        }
+
+        private void DeleteConnection(ConnectionViewModel connection) {
+            connection.Input.Connections.Remove(connection);
+            connection.Output.Connections.Remove(connection);
+            CurrentProductionLine.Connections.Remove(connection);
+            connectionManager.TryDelete(connection.Connection);
         }
     }
 }

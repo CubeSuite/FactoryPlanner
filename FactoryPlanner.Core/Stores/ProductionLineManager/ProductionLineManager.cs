@@ -4,8 +4,6 @@ using FactoryPlanner.Core.Stores.ObjectStore;
 using FactoryPlanner.Services;
 using FactoryPlanner.Stores.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,8 +39,8 @@ namespace FactoryPlanner.Core.Stores
 
         // Public Functions
 
-        public OperationResult CreateAndAdd(out ProductionLine productionLine) {
-            productionLine = new ProductionLine(GetNewLineID(), userSettings.ActiveGame);
+        public OperationResult CreateAndAdd(out ProductionLine productionLine, int parentID = -1) {
+            productionLine = new ProductionLine(GetNewLineID(), parentID, userSettings.ActiveGame);
             return TryAdd(productionLine);
         }
 
@@ -72,7 +70,7 @@ namespace FactoryPlanner.Core.Stores
             OperationResult result = database.TryDelete(line.ID);
             if (!result) return result;
 
-            return TryUpdate(line.ID, line);
+            return TryDelete(line.ID);
         }
 
         public override OperationResult Clear() {
