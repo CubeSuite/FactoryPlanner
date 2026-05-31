@@ -46,6 +46,7 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                 if (_port.IsExposed == value) return;
                 _port.IsExposed = value;
                 SaveChanges();
+                OnPropertyChanged();
             }
         }
 

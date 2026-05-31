@@ -1,28 +1,18 @@
-﻿using ABI.Windows.ApplicationModel.Activation;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FactoryPlanner.Core.MVVM.Models;
 using FactoryPlanner.Core.MVVM.Models.ViewModels;
 using FactoryPlanner.Core.Services;
 using FactoryPlanner.Core.Stores;
 using FactoryPlanner.Core.Stores.UserSettings;
-using FactoryPlanner.MVVM.Views;
-using FactoryPlanner.Services.Interfaces;
 using FactoryPlanner.Stores.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Xaml.Media.Animation;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.Contacts.DataProvider;
 using Windows.Foundation;
-using Windows.Media.Audio;
-using WinRT;
 
 namespace FactoryPlanner.MVVM.Pages
 {
@@ -176,27 +166,7 @@ namespace FactoryPlanner.MVVM.Pages
         partial void OnSelectedRecipeChanged(RecipeViewModel? value) {
             if (value == null) return;
             ProductionStepViewModel? stepVM = CreateProductionStep(value, LastCanvasClickPosition);
-            //if (!stepManager.CreateAndAdd(value.Recipe, LastCanvasClickPosition, out ProductionStep step)) return;
-            //ProductionStepViewModel stepVM = new ProductionStepViewModel(step, serviceProvider);
-
-            //List<ProductionPortViewModel> inputs = new List<ProductionPortViewModel>();
-            //for (int i = 0; i < value.Inputs.Count; i++) {
-            //    if (!portManager.CreateAndAdd(step, PortType.Input, i, out ProductionPort port)) continue;
-            //    inputs.Add(new ProductionPortViewModel(port, stepVM));
-            //}
-
-            //List<ProductionPortViewModel> outputs = new List<ProductionPortViewModel>();
-            //for (int i = 0; i < value.Outputs.Count; i++) {
-            //    if (!portManager.CreateAndAdd(step, PortType.Output, i, out ProductionPort port)) continue;
-            //    outputs.Add(new ProductionPortViewModel(port, stepVM));
-            //}
-
-            //stepVM.InputPorts = inputs;
-            //stepVM.OutputPorts = outputs;
-
-            //CurrentProductionLine.Steps.Add(stepVM);
-            //AddStepPopupIsOpen = false;
-
+            
             AddStepPopupIsOpen = false;
             _ = ResetSelectedRecipeAsync();
 

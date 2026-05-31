@@ -7,24 +7,15 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Net.Sockets;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.Graphics.Printing.OptionDetails;
-using Windows.Storage.AccessCache;
 using Windows.UI;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -120,7 +111,6 @@ namespace FactoryPlanner.MVVM.Pages
             else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null) {
                 foreach (object item in e.OldItems) {
                     if (item is IProductionNode node) {
-                        _ = UpdateNodePosition(node);
                         node.PropertyChanged -= OnNodePropertyChanged;
                     }
                 }

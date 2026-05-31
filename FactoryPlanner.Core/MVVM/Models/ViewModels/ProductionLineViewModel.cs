@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FactoryPlanner.Core.Services;
 using FactoryPlanner.Core.Stores;
 using FactoryPlanner.Services;
 using FactoryPlanner.Stores;
@@ -16,6 +17,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
+using Windows.Security.Cryptography.Core;
 
 namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 {
@@ -23,11 +25,12 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
     {
         // Services & Stores
         private readonly IUserSettings userSettings;
+        private readonly ISearchService searchService;
         private readonly IProductionLineManager lineManager;
         private readonly IProductionStepManager stepManager;
         private readonly IProductionPortManager portManager;
         private readonly IConnectionManager connectionManager;
-        
+
         // Fields
         private ProductionLine _productionLine;
         private ObservableCollection<ProductionLineViewModel> _subLines;
@@ -58,9 +61,14 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             set {
                 if (_productionLine.Name == value) return;
                 _productionLine.Name = value;
-                SaveChanges();
             }
         }
+
+        [ObservableProperty]
+        public partial string IconSearchTerm { get; set; }
+
+        public List<KeyValuePair<string, string>> AllIcons { get; }
+        public List<KeyValuePair<string, string>> FilteredIcons { get; set; }
 
         public string IconPath {
             get => _productionLine.IconPath;
@@ -68,6 +76,7 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                 if (_productionLine.IconPath == value) return;
                 _productionLine.IconPath = value;
                 SaveChanges();
+                OnPropertyChanged();
                 OnPropertyChanged(nameof(DefaultIconVisibility));
             }
         }
@@ -103,7 +112,6 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
         // Events
 
         public event Action<ProductionStepViewModel>? StepDuplicationRequested;
-        public event Action<ProductionLineViewModel>? LineDuplicationRequested;
         public event Action<ProductionLineViewModel>? LineDeletionRequested;
         public event Action<ProductionLineViewModel>? ShowLineRequested;
 
@@ -111,6 +119,7 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 
         public ProductionLineViewModel(ProductionLine productionLine, IServiceProvider serviceProvider) {
             userSettings = serviceProvider.GetRequiredService<IUserSettings>();
+            searchService = serviceProvider.GetRequiredService<ISearchService>();
             lineManager = serviceProvider.GetRequiredService<IProductionLineManager>();
             portManager = serviceProvider.GetRequiredService<IProductionPortManager>();
             stepManager = serviceProvider.GetRequiredService<IProductionStepManager>();
@@ -164,6 +173,26 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                     outputPort.Connections.Add(connectionVM);
                     Connections.Add(connectionVM);
                 }
+            }
+
+            IconSearchTerm = "";
+            AllIcons = new List<KeyValuePair<string, string>>();
+            FilteredIcons = new List<KeyValuePair<string, string>>();
+
+            KeyValuePair<string, string> none = new KeyValuePair<string, string>("Default", "");
+            AllIcons.Add(none);
+            FilteredIcons.Add(none);
+
+            foreach(Item item in serviceProvider.GetRequiredService<IItemManager>().GetAll()) {
+                KeyValuePair<string, string> pair = new KeyValuePair<string, string>(item.Name, item.IconPath);
+                AllIcons.Add(pair);
+                FilteredIcons.Add(pair);
+            }
+
+            foreach (Machine machine in serviceProvider.GetRequiredService<IMachineManager>().GetAll()) {
+                KeyValuePair<string, string> pair = new KeyValuePair<string, string>(machine.Name, machine.IconPath);
+                AllIcons.Add(pair);
+                FilteredIcons.Add(pair);
             }
 
             _subLines.CollectionChanged += OnSubLinesCollectionChanged;
@@ -226,16 +255,16 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             ShowLineRequested?.Invoke(subLine);
         }
 
+        partial void OnIconSearchTermChanged(string value) {
+            if (AllIcons == null || string.IsNullOrEmpty(value)) return;
+            _ = SearchIconsAsync();
+        }
+
         // Commands
 
         [RelayCommand]
-        private void Duplicate() {
-            LineDuplicationRequested?.Invoke(this);
-        }
-
-        [RelayCommand]
         private void Delete() {
-            LineDeletionRequested?.Invoke(this);
+            DeleteLine();
         }
 
         // Public Functions
@@ -252,7 +281,7 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             HashSet<ProductionStepViewModel> connectedSteps = new HashSet<ProductionStepViewModel>();
 
             foreach (ProductionPortViewModel port in step.InputPorts) {
-                foreach (ConnectionViewModel connection in port.Connections) {
+                foreach (ConnectionViewModel connection in port.Connections.ToList()) {
                     connectedSteps.Add(connection.Input.Parent);
                     connectionManager.TryDelete(connection.Connection);
                     Connections.Remove(connection);
@@ -263,7 +292,7 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             }
 
             foreach (ProductionPortViewModel port in step.OutputPorts) {
-                foreach (ConnectionViewModel connection in port.Connections) {
+                foreach (ConnectionViewModel connection in port.Connections.ToList()) {
                     connectedSteps.Add(connection.Output.Parent);
                     connectionManager.TryDelete(connection.Connection);
                     Connections.Remove(connection);
@@ -278,6 +307,24 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 
             foreach (ProductionStepViewModel connectedStep in connectedSteps) {
                 connectedStep.UpdateConnections();
+            }
+        }
+
+        public void DeleteLine() {
+            LineDeletionRequested?.Invoke(this);
+
+            foreach (ProductionLineViewModel subLine in SubLines.ToList()) {
+                subLine.DeleteLine();
+            }
+
+            foreach (ProductionStepViewModel step in Steps.ToList()) {
+                DeleteStep(step);
+            }
+
+            lineManager.TryDelete(ProductionLine);
+
+            if (Parent != null) {
+                Parent.SubLines.Remove(this);
             }
         }
 
@@ -296,6 +343,11 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 
             connection = null;
             return false;
+        }
+
+        public async Task SearchIconsAsync() {
+            FilteredIcons = (await searchService.Search(AllIcons, IconSearchTerm, pair => pair.Key)).ToList();
+            OnPropertyChanged(nameof(FilteredIcons));
         }
     }
 }

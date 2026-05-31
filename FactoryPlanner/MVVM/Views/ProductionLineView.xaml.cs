@@ -47,13 +47,12 @@ namespace FactoryPlanner.MVVM.Views
         // Listeners
 
         private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs e) {
-            if (e.NewValue is ProductionLineViewModel step) {
-                step.LineDuplicationRequested += OnFlyoutButtonClicked;
-                step.LineDeletionRequested += OnFlyoutButtonClicked;
+            if (e.NewValue is ProductionLineViewModel line) {
+                line.LineDeletionRequested += OnFlyoutButtonClicked;
             }
         }
 
-        private void OnFlyoutButtonClicked(ProductionLineViewModel step) {
+        private void OnFlyoutButtonClicked(ProductionLineViewModel line) {
             OptionsFlyout.Hide();
             DeleteFlyout.Hide();
         }
@@ -118,6 +117,11 @@ namespace FactoryPlanner.MVVM.Views
 
         private void OnNameBoxLostFocus(object sender, RoutedEventArgs e) {
             ViewModel.SaveChanges();
+        }
+
+        private void OnIconBoxSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs e) {
+            ViewModel.IconPath = ((KeyValuePair<string, string>)e.SelectedItem).Value;
+            ViewModel.IconSearchTerm = "";
         }
 
         // Private Functions

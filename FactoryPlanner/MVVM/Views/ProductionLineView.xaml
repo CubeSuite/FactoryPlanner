@@ -33,11 +33,13 @@
                 <Button.Flyout>
                     <Flyout x:Name="OptionsFlyout">
                         <StackPanel Spacing="8">
-                            <Button Content="Duplicate"
-                                    HorizontalAlignment="Stretch"
-                                    Command="{Binding DuplicateCommand}" />
-                            <AutoSuggestBox PlaceholderText="Change Icon"
-                                            HorizontalAlignment="Stretch" />
+                            <AutoSuggestBox Text="{Binding IconSearchTerm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            PlaceholderText="Change Icon"
+                                            ItemsSource="{Binding FilteredIcons}"
+                                            HorizontalAlignment="Stretch"
+                                            DisplayMemberPath="Key"
+                                            QueryIcon="Find"
+                                            SuggestionChosen="OnIconBoxSuggestionChosen" />
                         </StackPanel>
                     </Flyout>
                 </Button.Flyout>
@@ -94,7 +96,7 @@
                                 Width="30"
                                 Height="30"
                                 PointerPressed="OnInputPointerPressed">
-                            <Image Source="{Binding IconPath}"
+                            <Image Source="{Binding Item.IconPath}"
                                    Margin="2"
                                    IsHitTestVisible="False" />
                         </Border>
