@@ -74,6 +74,7 @@ namespace FactoryPlanner.MVVM.Pages
             MainCanvas.Children.Insert(0, connectionPath);
 
             RenderGrid();
+            UpdateMainCanvasCenter();
 
             hasLoaded = true;
             UpdateNodePositions();
@@ -81,6 +82,7 @@ namespace FactoryPlanner.MVVM.Pages
 
         private void OnFactoryPlannerPageSizeChanged(object sender, SizeChangedEventArgs e) {
             RenderGrid();
+            UpdateMainCanvasCenter();
         }
 
         // VM Listeners
@@ -328,10 +330,7 @@ namespace FactoryPlanner.MVVM.Pages
             PointerPoint pointer = e.GetCurrentPoint(this);
             Point viewportPosition = pointer.Position;
 
-            Point canvasPosition = new Point(
-                (viewportPosition.X - canvasTranslate.X) / canvasScale.ScaleX,
-                (viewportPosition.Y - canvasTranslate.Y) / canvasScale.ScaleY
-            );
+            Point canvasPosition = GetCanvasPosition(viewportPosition);
 
             if (ViewModel != null) {
                 ViewModel.CanvasClickCommand.Execute((viewportPosition, canvasPosition));
@@ -347,7 +346,22 @@ namespace FactoryPlanner.MVVM.Pages
             panStartPoint = currentPoint;
 
             RenderGrid();
+            UpdateMainCanvasCenter();
             e.Handled = true;
+        }
+
+        private Point GetCanvasPosition(Point viewportPosition) {
+            return new Point(
+                (viewportPosition.X - canvasTranslate.X) / canvasScale.ScaleX,
+                (viewportPosition.Y - canvasTranslate.Y) / canvasScale.ScaleY
+            );
+        }
+
+        private void UpdateMainCanvasCenter() {
+            if (ViewModel == null) return;
+
+            Point viewportCenter = new Point(MainCanvas.ActualWidth / 2, MainCanvas.ActualHeight / 2);
+            ViewModel.MainCanvasCenter = GetCanvasPosition(viewportCenter);
         }
 
         private void HandleStartDrawingConnection(FrameworkElement stepView, ProductionPortViewModel port) {

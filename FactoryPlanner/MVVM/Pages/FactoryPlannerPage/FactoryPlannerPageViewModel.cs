@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.Foundation;
+using Windows.Storage.AccessCache;
 
 namespace FactoryPlanner.MVVM.Pages
 {
@@ -105,6 +106,8 @@ namespace FactoryPlanner.MVVM.Pages
 
         [ObservableProperty]
         public partial Point LastCanvasClickPosition { get; set; }
+
+        public Point MainCanvasCenter { get; set; }
 
         [ObservableProperty]
         public partial bool IsDrawingConnection { get; set; }
@@ -209,7 +212,7 @@ namespace FactoryPlanner.MVVM.Pages
                 CurrentProductionLine = CurrentProductionLine.Parent;
             }
             else if (lineManager.CreateAndAdd(out ProductionLine line, -1)) {
-                ProductionLineViewModel lineVM = new ProductionLineViewModel(line, serviceProvider);
+                ProductionLineViewModel lineVM = new ProductionLineViewModel(line, serviceProvider) { Position = MainCanvasCenter };
                 CurrentProductionLine.ParentID = line.ID;
                 CurrentProductionLine.Parent = lineVM;
 
@@ -230,9 +233,17 @@ namespace FactoryPlanner.MVVM.Pages
         [RelayCommand]
         private void CreateNewProductionLine() {
             if (!lineManager.CreateAndAdd(out ProductionLine newLine, CurrentProductionLine.ID)) return;
-            ProductionLineViewModel newLineVM = new ProductionLineViewModel(newLine, CurrentProductionLine, serviceProvider);
+            ProductionLineViewModel newLineVM = new ProductionLineViewModel(newLine, CurrentProductionLine, serviceProvider) {
+                ParentID = CurrentProductionLine.ID,
+                Parent = CurrentProductionLine,
+                Position = LastCanvasClickPosition
+            };
+
+            newLineVM.SaveChanges();
+            newLineVM.ShowLineRequested += OnShowProductionLineRequested;
+
             CurrentProductionLine.SubLines.Add(newLineVM);
-            CurrentProductionLine = newLineVM;
+            AddStepPopupIsOpen = false;
         }
 
         [RelayCommand]
