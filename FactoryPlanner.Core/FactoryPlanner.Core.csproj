@@ -19,5 +19,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Npgsql" Version="10.0.2" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="MVVM\Models\Interfaces\" />
+  </ItemGroup>
   
 </Project>

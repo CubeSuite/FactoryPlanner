@@ -21,7 +21,7 @@
                 Background="Transparent">
 
             <ItemsControl x:Name="ConnectionsItemsControl"
-                          ItemsSource="{Binding ProductionLineVM.Connections}">
+                          ItemsSource="{Binding CurrentProductionLine.Connections}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <Canvas />
@@ -38,7 +38,7 @@
             </ItemsControl>
 
             <ItemsControl x:Name="StepsItemsControl"
-                          ItemsSource="{Binding ProductionLineVM.Steps}">
+                          ItemsSource="{Binding CurrentProductionLine.Steps}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <Canvas />
@@ -46,7 +46,22 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <views:ProductionStepView PortPressed="OnProductionStepPortPressed" />
+                        <views:ProductionStepView PortPressed="OnProductionNodePortPressed" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+
+            </ItemsControl>
+
+            <ItemsControl x:Name="SubLinesItemsControl"
+                          ItemsSource="{Binding CurrentProductionLine.SubLines}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <views:ProductionLineView PortPressed="OnProductionNodePortPressed" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
 
@@ -55,7 +70,8 @@
 
         <Button ToolTipService.ToolTip="To Parent"
                 HorizontalAlignment="Left"
-                VerticalAlignment="Top">
+                VerticalAlignment="Top"
+                Command="{Binding UpALevelCommand}">
             <FontIcon Glyph="&#xE74A;" />
         </Button>
 

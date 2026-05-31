@@ -2,24 +2,20 @@ using FactoryPlanner.Core.MVVM.Models;
 using FactoryPlanner.Core.MVVM.Models.ViewModels;
 using FactoryPlanner.MVVM.Views;
 using Microsoft.UI;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -30,6 +26,8 @@ namespace FactoryPlanner.MVVM.Pages
     public sealed partial class FactoryPlannerPage : Page
     {
         // Fields
+        private bool hasLoaded = false;
+        
         private bool isPanning = false;
         private Point panStartPoint;
         private TranslateTransform canvasTranslate = new TranslateTransform();
@@ -61,28 +59,24 @@ namespace FactoryPlanner.MVVM.Pages
         // Page Listeners
 
         private void OnFactoryPlannerPageLoaded(object sender, RoutedEventArgs e) {
-            if (ViewModel != null) {
-                ViewModel.PropertyChanged += OnViewModelPropertyChanged;
-                ViewModel.ProductionLineVM.Steps.CollectionChanged += OnStepsCollectionChanged;
-                foreach(ProductionStepViewModel stepVM in ViewModel.ProductionLineVM.Steps) {
-                    _ = UpdateStepPosition(stepVM);
-                    stepVM.PropertyChanged += OnStepPropertyChanged;
-                }
+            ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
-                Color lineColour = ViewModel.UserSettings.DarkMode ? Colors.White : Colors.Black;
-                SolidColorBrush lineBrush = new SolidColorBrush(lineColour);
-                connectionPath = new Path() {
-                    Stroke = lineBrush,
-                    StrokeThickness = 2,
-                    StrokeLineJoin = PenLineJoin.Round,
-                    StrokeStartLineCap = PenLineCap.Round,
-                    StrokeEndLineCap = PenLineCap.Round
-                };
+            Color lineColour = ViewModel.UserSettings.DarkMode ? Colors.White : Colors.Black;
+            SolidColorBrush lineBrush = new SolidColorBrush(lineColour);
+            connectionPath = new Path() {
+                Stroke = lineBrush,
+                StrokeThickness = 2,
+                StrokeLineJoin = PenLineJoin.Round,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round
+            };
 
-                MainCanvas.Children.Insert(0, connectionPath);
-            }
+            MainCanvas.Children.Insert(0, connectionPath);
 
             RenderGrid();
+
+            hasLoaded = true;
+            UpdateNodePositions();
         }
 
         private void OnFactoryPlannerPageSizeChanged(object sender, SizeChangedEventArgs e) {
@@ -100,31 +94,32 @@ namespace FactoryPlanner.MVVM.Pages
             else if (e.PropertyName == nameof(FactoryPlannerPageViewModel.IsDrawingConnection)) {
                 if (!ViewModel.IsDrawingConnection) connectionPath?.Data = null;
             }
+            else if (e.PropertyName == nameof(FactoryPlannerPageViewModel.CurrentProductionLine)) {
+                UpdateNodePositions();
+            }
         }
 
-        private void OnStepsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) {
+        private void OnNodeCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) {
             if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null) {
                 foreach (object item in e.NewItems) {
-                    if (item is ProductionStepViewModel stepVM) {
-                        _ = UpdateStepPosition(stepVM);
-                        stepVM.PropertyChanged += OnStepPropertyChanged;
+                    if (item is IProductionNode node) {
+                        _ = UpdateNodePosition(node);
+                        node.PropertyChanged += OnNodePropertyChanged;
                     }
                 }
             }
             else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null) {
                 foreach (object item in e.OldItems) {
-                    if (item is ProductionStepViewModel stepVM) {
-                        stepVM.PropertyChanged -= OnStepPropertyChanged;
+                    if (item is IProductionNode node) {
+                        node.PropertyChanged -= OnNodePropertyChanged;
                     }
                 }
             }
         }
 
-        private void OnStepPropertyChanged(object? sender, PropertyChangedEventArgs e) {
-            if (e.PropertyName == nameof(ProductionStepViewModel.Position) && 
-                sender is ProductionStepViewModel stepVM
-            ) {
-                _ = UpdateStepPosition(stepVM);
+        private void OnNodePropertyChanged(object? sender, PropertyChangedEventArgs e) {
+            if (e.PropertyName == nameof(IProductionNode.Position) && sender is IProductionNode node) {
+                _ = UpdateNodePosition(node);
             }
         }
 
@@ -192,16 +187,26 @@ namespace FactoryPlanner.MVVM.Pages
             e.Handled = true;
         }
 
-        private void OnProductionStepPortPressed(object sender, ProductionPortViewModel port) {
-            if (sender is not ProductionStepView stepView) return;
+        private void OnProductionNodePortPressed(object sender, ProductionPortViewModel port) {
+            FrameworkElement element;
+            bool isExposed = false;
+
+            if (sender is ProductionLineView lineView) {
+                element = lineView;
+                isExposed = true;
+            }
+            else if (sender is ProductionStepView stepView) element = stepView;
+            else return;
 
             ViewModel.IsDrawingConnection = !ViewModel.IsDrawingConnection;
 
             if (ViewModel.IsDrawingConnection) {
                 if (connectionPath != null) connectionPath.Data = null;
-                HandleStartDrawingConnection(stepView, port);
+                ViewModel.IsStartPortExposed = isExposed;
+                HandleStartDrawingConnection(element, port);
             }
             else {
+                ViewModel.IsEndPortExposed = isExposed;
                 HandleEndDrawingConnection(port);
             }
         }
@@ -251,18 +256,59 @@ namespace FactoryPlanner.MVVM.Pages
             }
         }
 
-        private async Task UpdateStepPosition(ProductionStepViewModel stepVM) {
-            UIElement? container = StepsItemsControl.ContainerFromItem(stepVM) as UIElement;
+        private void UpdateNodePositions() {
+            if (ViewModel == null || !hasLoaded) return;
+
+            ViewModel.CurrentProductionLine.SubLines.CollectionChanged += OnNodeCollectionChanged;
+            foreach (ProductionLineViewModel lineVM in ViewModel.CurrentProductionLine.SubLines) {
+                _ = UpdateNodePosition(lineVM);
+                lineVM.PropertyChanged += OnNodePropertyChanged;
+            }
+
+            ViewModel.CurrentProductionLine.Steps.CollectionChanged += OnNodeCollectionChanged;
+            foreach (ProductionStepViewModel stepVM in ViewModel.CurrentProductionLine.Steps) {
+                _ = UpdateNodePosition(stepVM);
+                stepVM.PropertyChanged += OnNodePropertyChanged;
+            }
+        }
+
+        private async Task UpdateNodePosition(IProductionNode node) {
+            ItemsControl? itemsControl = TryGetItemsControlForType(node);
+            if (itemsControl == null) return;
+
+            UIElement? container = itemsControl.ContainerFromItem(node) as UIElement;
             if (container == null) {
-                await StepsItemsControl.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
-                    container = StepsItemsControl.ContainerFromItem(stepVM) as UIElement;
-                });
+                container = await TryGetContainerAsync(itemsControl, node);
             }
 
             if (container != null) {
-                Canvas.SetLeft(container, stepVM.Position.X);
-                Canvas.SetTop(container, stepVM.Position.Y);
+                Canvas.SetLeft(container, node.Position.X);
+                Canvas.SetTop(container, node.Position.Y);
             }
+        }
+
+        private Task<UIElement?> TryGetContainerAsync(ItemsControl itemsControl, IProductionNode node) {
+            TaskCompletionSource<UIElement?> taskCompletionSource = new TaskCompletionSource<UIElement?>();
+
+            bool wasQueued = itemsControl.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () => {
+                itemsControl.UpdateLayout();
+                UIElement? container = itemsControl.ContainerFromItem(node) as UIElement;
+                taskCompletionSource.TrySetResult(container);
+            });
+
+            if (!wasQueued) {
+                taskCompletionSource.TrySetResult(null);
+            }
+
+            return taskCompletionSource.Task;
+        }
+
+        private ItemsControl? TryGetItemsControlForType(IProductionNode node) {
+            if (node is ProductionLineViewModel) return SubLinesItemsControl;
+            if (node is ProductionStepViewModel) return StepsItemsControl;
+            
+            Debug.Assert(false, $"Failed to get ItemsControl for type {node.GetType()}");
+            return null;
         }
 
         private void HandleMiddleMousePanning(object sender, PointerRoutedEventArgs e) {
@@ -304,12 +350,12 @@ namespace FactoryPlanner.MVVM.Pages
             e.Handled = true;
         }
 
-        private void HandleStartDrawingConnection(ProductionStepView stepView, ProductionPortViewModel port) {
+        private void HandleStartDrawingConnection(FrameworkElement stepView, ProductionPortViewModel port) {
             ViewModel.StartPort = port;
             string repeaterName = port.Type == PortType.Input ? "InputsContainer" : "OutputsContainer";
             
             if (stepView.FindName(repeaterName) is ItemsRepeater repeater &&
-                repeater.TryGetElement(port.Index) is FrameworkElement portElement
+                repeater.TryGetElement(port.VisualIndex) is FrameworkElement portElement
             ) {
                 Point portTopLeft = portElement.TransformToVisual(MainCanvas).TransformPoint(new Point(0, 0));
                 portPosition = new Point(

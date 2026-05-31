@@ -37,7 +37,7 @@ namespace FactoryPlanner.MVVM.Views
         // Listeners
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
-            AttachToSteps();
+            AttachToPortHosts();
             UpdateConnectionVisual();
         }
 
@@ -46,29 +46,31 @@ namespace FactoryPlanner.MVVM.Views
         }
 
         private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args) {
-            AttachToSteps();
+            AttachToPortHosts();
             UpdateConnectionVisual();
         }
 
         private void OnStepPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) {
-            if (e.PropertyName == nameof(ProductionStepViewModel.Position)) {
+            if (e.PropertyName == nameof(ProductionStepViewModel.Position) ||
+                e.PropertyName == nameof(ProductionLineViewModel.Position)) {
                 UpdateConnectionVisual();
             }
         }
 
         // Private Functions
 
-        private void AttachToSteps() {
+        private void AttachToPortHosts() {
             if (DataContext is not ConnectionViewModel connectionVM) return;
 
-            if (FindStepView(connectionVM.Input) is ProductionStepView inputView && inputView.DataContext is ProductionStepViewModel inputVM) {
-                inputVM.PropertyChanged -= OnStepPropertyChanged;
-                inputVM.PropertyChanged += OnStepPropertyChanged;
-            }
+            AttachToPortHost(connectionVM.Input);
+            AttachToPortHost(connectionVM.Output);
+        }
 
-            if (FindStepView(connectionVM.Output) is ProductionStepView outputView && outputView.DataContext is ProductionStepViewModel outputVM) {
-                outputVM.PropertyChanged -= OnStepPropertyChanged;
-                outputVM.PropertyChanged += OnStepPropertyChanged;
+        private void AttachToPortHost(ProductionPortViewModel port) {
+            if (FindPortHostView(port) is FrameworkElement hostView &&
+                hostView.DataContext is System.ComponentModel.INotifyPropertyChanged hostViewModel) {
+                hostViewModel.PropertyChanged -= OnStepPropertyChanged;
+                hostViewModel.PropertyChanged += OnStepPropertyChanged;
             }
         }
         
@@ -111,6 +113,13 @@ namespace FactoryPlanner.MVVM.Views
             Canvas.SetTop(QuantityBox, midpoint.Y - (textBoxHeight / 2));
         }
 
+        private FrameworkElement? FindPortHostView(ProductionPortViewModel port) {
+            ProductionStepView? stepView = FindStepView(port);
+            if (stepView != null) return stepView;
+
+            return FindProductionLineView(port);
+        }
+
         private ProductionStepView? FindStepView(ProductionPortViewModel connectedStep) {
             if (XamlRoot?.Content is not FrameworkElement root) return null;
 
@@ -118,19 +127,46 @@ namespace FactoryPlanner.MVVM.Views
                 .FirstOrDefault(view => view.DataContext is ProductionStepViewModel vm && vm.ProductionStep == connectedStep.Parent.ProductionStep);
         }
 
+        private ProductionLineView? FindProductionLineView(ProductionPortViewModel port) {
+            if (XamlRoot?.Content is not FrameworkElement root) return null;
+
+            return FindDescendant<ProductionLineView>(root)
+                .FirstOrDefault(view =>
+                    view.DataContext is ProductionLineViewModel vm &&
+                    ((port.Type == PortType.Input && vm.InputPorts.Contains(port)) ||
+                     (port.Type == PortType.Output && vm.OutputPorts.Contains(port))));
+        }
+
         private Point? GetPortCenter(ProductionPortViewModel connectedStep) {
-            ProductionStepView? stepView = FindStepView(connectedStep);
-            if (stepView == null) return null;
+            FrameworkElement? hostView = FindPortHostView(connectedStep);
+            if (hostView == null) return null;
 
             string repeaterName = connectedStep.Type == PortType.Input ? "InputsContainer" : "OutputsContainer";
-            if (stepView.FindName(repeaterName) is not ItemsRepeater repeater) return null;
-            if (repeater.TryGetElement(connectedStep.Index) is not FrameworkElement portElement) return null;
+            if (hostView.FindName(repeaterName) is not ItemsRepeater repeater) return null;
+
+            int portIndex = GetPortIndex(hostView, connectedStep);
+            if (portIndex < 0) return null;
+            if (repeater.TryGetElement(portIndex) is not FrameworkElement portElement) return null;
 
             Point topLeft = portElement.TransformToVisual(this).TransformPoint(new Point(0, 0));
             return new Point(
                 topLeft.X + (portElement.ActualWidth / 2),
                 topLeft.Y + (portElement.ActualHeight / 2)
             );
+        }
+
+        private static int GetPortIndex(FrameworkElement hostView, ProductionPortViewModel port) {
+            if (hostView is ProductionStepView) {
+                return port.Index;
+            }
+
+            if (hostView is ProductionLineView && hostView.DataContext is ProductionLineViewModel lineVM) {
+                return port.Type == PortType.Input
+                    ? lineVM.InputPorts.IndexOf(port)
+                    : lineVM.OutputPorts.IndexOf(port);
+            }
+
+            return -1;
         }
 
         private static Point GetBezierPoint(Point p0, Point p1, Point p2, Point p3, double t) {

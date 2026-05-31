@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using FactoryPlanner.Core.Stores;
 using FactoryPlanner.Core.Stores.UserSettings;
 using FactoryPlanner.Services.Interfaces;
@@ -17,7 +18,7 @@ using Windows.UI.StartScreen;
 
 namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 {
-    public class ProductionStepViewModel : ObservableObject
+    public partial class ProductionStepViewModel : ObservableObject, IProductionNode
     {
         // Services & Stores
         private readonly IProductionStepManager stepManager;
@@ -50,7 +51,6 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                 _productionStep.NumMachines = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(MachineName));
-                SaveChanges();
             }
         }
 
@@ -79,7 +79,6 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                 if (_productionStep.Position == newPosition) return;
                 _productionStep.Position = newPosition;
                 OnPropertyChanged();
-                SaveChanges();
             }
         }
 
@@ -101,6 +100,11 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             }
         }
 
+        // Events
+
+        public event Action<ProductionStepViewModel>? DuplicateRequested;
+        public event Action<ProductionStepViewModel>? DeleteRequested;
+
         // Constructors
 
         public ProductionStepViewModel(ProductionStep step, IServiceProvider serviceProvider) {
@@ -117,13 +121,13 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 
             foreach(int id in step.InputPortIDs) {
                 if (portManager.TryGet(id, out ProductionPort port)) {
-                    _inputPorts.Add(new ProductionPortViewModel(port, this));
+                    _inputPorts.Add(new ProductionPortViewModel(port, this, serviceProvider));
                 }
             }
 
             foreach (int id in step.OutputPortIDs) {
                 if (portManager.TryGet(id, out ProductionPort port)) {
-                    _outputPorts.Add(new ProductionPortViewModel(port, this));
+                    _outputPorts.Add(new ProductionPortViewModel(port, this, serviceProvider));
                 }
             }
         }
@@ -136,6 +140,18 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             }
         }
 
+        // Commands
+
+        [RelayCommand]
+        private void Duplicate() {
+            DuplicateRequested?.Invoke(this);
+        }
+
+        [RelayCommand]
+        private void Delete() {
+            DeleteRequested?.Invoke(this);
+        }
+
         // Public Functions
 
         public void UpdateConnections(ProductionPortViewModel? caller = null) {
@@ -146,7 +162,7 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 
             foreach (ProductionPortViewModel port in OutputPorts) {
                 if (caller == null) port.PushResources();
-                else if (port != caller) port.UpdateConnections(this); // ToDo: figure out how to remove this clause without stack overflow
+                else if (port != caller) port.UpdateConnections(this);
             }
 
             if (caller != null && LastTypedNumMachines == -1) {
@@ -155,9 +171,8 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                     PortType.Output => OutputPorts.Max(port => port.Quantity / Recipe.OutputEntries[caller.Index].Rate),
                     _ => 0
                 };
-            }
-            else if (caller?.Type == PortType.Input) {
-                //double quantity = 
+
+                SaveChanges();
             }
         }
 

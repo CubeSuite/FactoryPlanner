@@ -6,19 +6,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.Activation;
-using Windows.Media.MediaProperties;
-using Windows.Networking.Connectivity;
 
 namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 {
     public class ProductionPortViewModel : ObservableObject 
     {
+        // Services & Stores
+        private readonly IProductionPortManager portManager;
+
         // Fields
         private ProductionPort _port;
         private ProductionStepViewModel _parent;
         private List<ConnectionViewModel> _connections;
         private double _quantity;
+        private int _visualIndex;
 
         // Properties
         public ProductionPort Port => _port;
@@ -39,17 +40,34 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             set => _quantity = value;
         }
 
+        public bool IsExposed {
+            get => _port.IsExposed;
+            set {
+                if (_port.IsExposed == value) return;
+                _port.IsExposed = value;
+                SaveChanges();
+                OnPropertyChanged();
+            }
+        }
+
+        public int VisualIndex {
+            get => _visualIndex;
+            set => _visualIndex = value;
+        }
+
         // Constructors
 
-        public ProductionPortViewModel(ProductionPort port, ProductionStepViewModel parent) {
-            _port = port;
-            _parent = parent;
+        public ProductionPortViewModel(ProductionPortViewModel port, IServiceProvider serviceProvider) {
+            portManager = serviceProvider.GetRequiredService<IProductionPortManager>();
+            _port = port._port;
+            _parent = port.Parent;
             _connections = new List<ConnectionViewModel>();
         }
 
-        public ProductionPortViewModel(ProductionPortViewModel port) {
-            _port = port._port;
-            _parent = port.Parent;
+        public ProductionPortViewModel(ProductionPort port, ProductionStepViewModel parent, IServiceProvider serviceProvider) {
+            portManager = serviceProvider.GetRequiredService<IProductionPortManager>();
+            _port = port;
+            _parent = parent;
             _connections = new List<ConnectionViewModel>();
         }
 
@@ -126,6 +144,10 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                 connection.Quantity = each;
                 connection.UpdateConnections(this);
             }
+        }
+
+        public void SaveChanges() {
+            portManager.TryUpdate(Port);
         }
     }
 }

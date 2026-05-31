@@ -31,6 +31,7 @@
     <None Remove="MVVM\Views\MachineView.xaml" />
     <None Remove="MVVM\Views\MessageView\MessageView.xaml" />
     <None Remove="MVVM\Views\ItemView\ItemView.xaml" />
+    <None Remove="MVVM\Views\ProductionLineView.xaml" />
     <None Remove="MVVM\Views\ProductionStepView.xaml" />
   </ItemGroup>
 
@@ -118,6 +119,9 @@
     <None Update="MVVM\Views\ItemView\ItemView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </None>
+    <Page Update="MVVM\Views\ProductionLineView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Update="MVVM\Views\LocalGameView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

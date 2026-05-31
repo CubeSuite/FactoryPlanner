@@ -65,7 +65,7 @@ namespace FactoryPlanner.Core.Stores
             OperationResult result = database.TryDelete(step.ID);
             if (!result) return result;
 
-            return TryUpdate(step.ID, step);
+            return TryDelete(step.ID);
         }
 
         public override OperationResult Clear() {
