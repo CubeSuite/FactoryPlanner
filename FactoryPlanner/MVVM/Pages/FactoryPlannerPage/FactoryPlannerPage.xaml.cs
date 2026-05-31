@@ -286,6 +286,12 @@ namespace FactoryPlanner.MVVM.Pages
             if (container != null) {
                 Canvas.SetLeft(container, node.Position.X);
                 Canvas.SetTop(container, node.Position.Y);
+
+                if (container is FrameworkElement element && ViewModel != null && ViewModel.UserSettings.SnapToGrid) {
+                    int gridSize = ViewModel.GridSize;
+                    element.Width = Math.Ceiling(element.ActualWidth / gridSize) * gridSize;
+                    element.Height = Math.Ceiling(element.ActualHeight / gridSize) * gridSize;
+                }
             }
         }
 
