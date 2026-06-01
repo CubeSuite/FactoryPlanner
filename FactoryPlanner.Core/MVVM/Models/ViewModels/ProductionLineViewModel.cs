@@ -1,125 +1,52 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using FactoryPlanner.Core.Services;
 using FactoryPlanner.Core.Stores;
-using FactoryPlanner.Services;
-using FactoryPlanner.Stores;
 using FactoryPlanner.Stores.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Xaml;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
-using Windows.Security.Cryptography.Core;
 
 namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 {
-    public partial class ProductionLineViewModel : ObservableObject, IProductionNode
+    /// <summary>
+    /// Represents the canvas currently being viewed. Owns its steps, sub-line nodes,
+    /// and connections. All graph-mutation operations live here.
+    /// </summary>
+    public partial class ProductionLineViewModel : ObservableObject
     {
         // Services & Stores
-        private readonly IUserSettings userSettings;
-        private readonly ISearchService searchService;
+        private readonly IServiceProvider serviceProvider;
         private readonly IProductionLineManager lineManager;
         private readonly IProductionStepManager stepManager;
         private readonly IProductionPortManager portManager;
         private readonly IConnectionManager connectionManager;
 
         // Fields
-        private ProductionLine _productionLine;
-        private ObservableCollection<ProductionLineViewModel> _subLines;
-        private ObservableCollection<ProductionStepViewModel> _steps;
-        private ObservableCollection<ConnectionViewModel> _connections;
-        private Dictionary<int, ProductionPortViewModel> portMap;
+        private readonly ProductionLine _productionLine;
+        private readonly ObservableCollection<SubLineViewModel> _subLines;
+        private readonly ObservableCollection<ProductionStepViewModel> _steps;
+        private readonly ObservableCollection<ConnectionViewModel> _connections;
+        private readonly Dictionary<int, ProductionPortViewModel> portMap;
 
         // Properties
         public int ID => _productionLine.ID;
+        public ProductionLine ProductionLine => _productionLine;
         public ProductionLineViewModel? Parent { get; set; }
 
-        public ProductionLine ProductionLine => _productionLine;
-        public ObservableCollection<ProductionLineViewModel> SubLines => _subLines;
+        public ObservableCollection<SubLineViewModel> SubLines => _subLines;
         public ObservableCollection<ProductionStepViewModel> Steps => _steps;
         public ObservableCollection<ConnectionViewModel> Connections => _connections;
 
-        public int ParentID {
-            get => _productionLine.ParentID;
-            set {
-                if (_productionLine.ParentID == value) return;
-                _productionLine.ParentID = value;
-                SaveChanges();
-            }
-        }
-
-        public string Name {
-            get => _productionLine.Name;
-            set {
-                if (_productionLine.Name == value) return;
-                _productionLine.Name = value;
-            }
-        }
-
-        [ObservableProperty]
-        public partial string IconSearchTerm { get; set; }
-
-        public List<KeyValuePair<string, string>> AllIcons { get; }
-        public List<KeyValuePair<string, string>> FilteredIcons { get; set; }
-
-        public string IconPath {
-            get => _productionLine.IconPath;
-            set {
-                if (_productionLine.IconPath == value) return;
-                _productionLine.IconPath = value;
-                SaveChanges();
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(DefaultIconVisibility));
-            }
-        }
-
-        public Visibility DefaultIconVisibility => string.IsNullOrEmpty(IconPath) ? Visibility.Visible : Visibility.Collapsed;
-
-        public Point Position {
-            get => _productionLine.Position;
-            set {
-                Point newPosition = value;
-                if (userSettings.SnapToGrid) {
-                    int gridSize = userSettings.GridSize;
-                    newPosition = new Point(
-                        Math.Round(value.X / gridSize) * gridSize,
-                        Math.Round(value.Y / gridSize) * gridSize
-                    );
-                }
-
-                if (_productionLine.Position == newPosition) return;
-                _productionLine.Position = newPosition;
-                OnPropertyChanged();
-            }
-        }
-
-        public List<ProductionPortViewModel> InputPorts => Steps.SelectMany(step => step.InputPorts)
-                                                                .Where(port => port.Connections.Count == 0 || port.IsExposed)
-                                                                .ToList();
-
-        public List<ProductionPortViewModel> OutputPorts => Steps.SelectMany(step => step.OutputPorts)
-                                                                 .Where(port => port.Connections.Count == 0 || port.IsExposed)
-                                                                 .ToList();
-
         // Events
-
-        public event Action<ProductionStepViewModel>? StepDuplicationRequested;
-        public event Action<ProductionLineViewModel>? LineDeletionRequested;
-        public event Action<ProductionLineViewModel>? ShowLineRequested;
+        public event Action<SubLineViewModel>? SubLineShowRequested;
 
         // Constructors
 
         public ProductionLineViewModel(ProductionLine productionLine, IServiceProvider serviceProvider) {
-            userSettings = serviceProvider.GetRequiredService<IUserSettings>();
-            searchService = serviceProvider.GetRequiredService<ISearchService>();
+            this.serviceProvider = serviceProvider;
             lineManager = serviceProvider.GetRequiredService<IProductionLineManager>();
             portManager = serviceProvider.GetRequiredService<IProductionPortManager>();
             stepManager = serviceProvider.GetRequiredService<IProductionStepManager>();
@@ -130,69 +57,38 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 
             _steps = new ObservableCollection<ProductionStepViewModel>();
             foreach (int id in _productionLine.Steps) {
-                if (stepManager.TryGet(id, out ProductionStep step)) {
-                    ProductionStepViewModel stepVM = new ProductionStepViewModel(step, serviceProvider);
-                    stepVM.DuplicateRequested += DuplicateStep;
-                    stepVM.DeleteRequested += DeleteStep;
+                if (!stepManager.TryGet(id, out ProductionStep step)) continue;
 
-                    foreach (ProductionPortViewModel port in stepVM.InputPorts) portMap.Add(port.ID, port);
-                    foreach (ProductionPortViewModel port in stepVM.OutputPorts) portMap.Add(port.ID, port);
-                    _steps.Add(stepVM);
-                }
+                ProductionStepViewModel stepVM = new ProductionStepViewModel(step, serviceProvider);
+                WireStepEvents(stepVM);
+
+                foreach (ProductionPortViewModel port in stepVM.InputPorts) portMap[port.ID] = port;
+                foreach (ProductionPortViewModel port in stepVM.OutputPorts) portMap[port.ID] = port;
+                _steps.Add(stepVM);
             }
 
-            _subLines = new ObservableCollection<ProductionLineViewModel>();
+            _subLines = new ObservableCollection<SubLineViewModel>();
             foreach (int id in _productionLine.SubLines) {
-                if (lineManager.TryGet(id, out ProductionLine subLine)) {
-                    ProductionLineViewModel subLineVM = new ProductionLineViewModel(subLine, serviceProvider) {
-                        Parent = this
-                    };
+                if (!lineManager.TryGet(id, out ProductionLine subLine)) continue;
 
-                    subLineVM.ShowLineRequested += OnShowSubLineRequested;
+                SubLineViewModel subLineVM = new SubLineViewModel(subLine, serviceProvider);
+                WireSubLineEvents(subLineVM);
 
-                    foreach (ProductionPortViewModel port in subLineVM.InputPorts) portMap.Add(port.ID, port);
-                    foreach (ProductionPortViewModel port in subLineVM.OutputPorts) portMap.Add(port.ID, port);
-
-                    _subLines.Add(subLineVM);
-                }
+                foreach (ProductionPortViewModel port in subLineVM.InputPorts) portMap[port.ID] = port;
+                foreach (ProductionPortViewModel port in subLineVM.OutputPorts) portMap[port.ID] = port;
+                _subLines.Add(subLineVM);
             }
 
             _connections = new ObservableCollection<ConnectionViewModel>();
             foreach (int id in _productionLine.Connections) {
-                if (connectionManager.TryGet(id, out Connection connection)) {
-                    ProductionPortViewModel inputPort = portMap[connection.InputPortID];
-                    ProductionPortViewModel outputPort = portMap[connection.OutputPortID];
-                    ConnectionViewModel connectionVM = new ConnectionViewModel(
-                        connection,
-                        portMap[connection.InputPortID],
-                        portMap[connection.OutputPortID],
-                        serviceProvider
-                    );
+                if (!connectionManager.TryGet(id, out Connection connection)) continue;
+                if (!portMap.TryGetValue(connection.InputPortID, out ProductionPortViewModel? inputPort)) continue;
+                if (!portMap.TryGetValue(connection.OutputPortID, out ProductionPortViewModel? outputPort)) continue;
 
-                    inputPort.Connections.Add(connectionVM);
-                    outputPort.Connections.Add(connectionVM);
-                    Connections.Add(connectionVM);
-                }
-            }
-
-            IconSearchTerm = "";
-            AllIcons = new List<KeyValuePair<string, string>>();
-            FilteredIcons = new List<KeyValuePair<string, string>>();
-
-            KeyValuePair<string, string> none = new KeyValuePair<string, string>("Default", "");
-            AllIcons.Add(none);
-            FilteredIcons.Add(none);
-
-            foreach(Item item in serviceProvider.GetRequiredService<IItemManager>().GetAll()) {
-                KeyValuePair<string, string> pair = new KeyValuePair<string, string>(item.Name, item.IconPath);
-                AllIcons.Add(pair);
-                FilteredIcons.Add(pair);
-            }
-
-            foreach (Machine machine in serviceProvider.GetRequiredService<IMachineManager>().GetAll()) {
-                KeyValuePair<string, string> pair = new KeyValuePair<string, string>(machine.Name, machine.IconPath);
-                AllIcons.Add(pair);
-                FilteredIcons.Add(pair);
+                ConnectionViewModel connectionVM = new ConnectionViewModel(connection, inputPort, outputPort, serviceProvider);
+                inputPort.Connections.Add(connectionVM);
+                outputPort.Connections.Add(connectionVM);
+                _connections.Add(connectionVM);
             }
 
             _subLines.CollectionChanged += OnSubLinesCollectionChanged;
@@ -200,20 +96,17 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             _connections.CollectionChanged += OnConnectionsCollectionChanged;
         }
 
-        public ProductionLineViewModel(ProductionLine productionLine, ProductionLineViewModel parent, IServiceProvider serviceProvider) : this(productionLine, serviceProvider) {
-            Parent = parent;
-        }
-
-        // Listeners
+        // Collection Listeners
 
         private void OnSubLinesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) {
             if (e.NewItems != null) {
-                foreach (ProductionLineViewModel line in e.NewItems) {
+                foreach (SubLineViewModel line in e.NewItems) {
                     _productionLine.SubLines.Add(line.ProductionLine.ID);
+                    WireSubLineEvents(line);
                 }
             }
             else if (e.OldItems != null) {
-                foreach (ProductionLineViewModel line in e.OldItems) {
+                foreach (SubLineViewModel line in e.OldItems) {
                     _productionLine.SubLines.Remove(line.ProductionLine.ID);
                 }
             }
@@ -251,30 +144,39 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             SaveChanges();
         }
 
-        private void OnShowSubLineRequested(ProductionLineViewModel subLine) {
-            ShowLineRequested?.Invoke(subLine);
-        }
+        // Public Graph-Mutation Methods
 
-        partial void OnIconSearchTermChanged(string value) {
-            if (AllIcons == null || string.IsNullOrEmpty(value)) return;
-            _ = SearchIconsAsync();
-        }
+        public ProductionStepViewModel? AddStep(RecipeViewModel recipe, Point position) {
+            if (!stepManager.CreateAndAdd(recipe.Recipe, position, out ProductionStep step)) return null;
 
-        // Commands
+            ProductionStepViewModel stepVM = new ProductionStepViewModel(step, serviceProvider);
+            WireStepEvents(stepVM);
 
-        [RelayCommand]
-        private void Delete() {
-            DeleteLine();
-        }
+            List<ProductionPortViewModel> inputs = new List<ProductionPortViewModel>();
+            for (int i = 0; i < recipe.Inputs.Count; i++) {
+                if (!portManager.CreateAndAdd(step, PortType.Input, i, out ProductionPort port)) continue;
+                ProductionPortViewModel portVM = new ProductionPortViewModel(port, stepVM, serviceProvider);
+                inputs.Add(portVM);
+                portMap[portVM.ID] = portVM;
+            }
 
-        // Public Functions
+            List<ProductionPortViewModel> outputs = new List<ProductionPortViewModel>();
+            for (int i = 0; i < recipe.Outputs.Count; i++) {
+                if (!portManager.CreateAndAdd(step, PortType.Output, i, out ProductionPort port)) continue;
+                ProductionPortViewModel portVM = new ProductionPortViewModel(port, stepVM, serviceProvider);
+                outputs.Add(portVM);
+                portMap[portVM.ID] = portVM;
+            }
 
-        public void SaveChanges() {
-            lineManager.TryUpdate(_productionLine);
+            stepVM.InputPorts = inputs;
+            stepVM.OutputPorts = outputs;
+
+            Steps.Add(stepVM);
+            return stepVM;
         }
 
         public void DuplicateStep(ProductionStepViewModel step) {
-            StepDuplicationRequested?.Invoke(step);
+            AddStep(step.Recipe, new Point(step.Position.X, step.Position.Y - 160));
         }
 
         public void DeleteStep(ProductionStepViewModel step) {
@@ -310,30 +212,59 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             }
         }
 
-        public void DeleteLine() {
-            LineDeletionRequested?.Invoke(this);
-
-            foreach (ProductionLineViewModel subLine in SubLines.ToList()) {
-                subLine.DeleteLine();
+        public void DeleteSubLine(SubLineViewModel subLine) {
+            foreach (ProductionPortViewModel port in subLine.InputPorts.Concat(subLine.OutputPorts)) {
+                foreach (ConnectionViewModel conn in port.Connections.ToList()) {
+                    DeleteConnection(conn);
+                }
             }
 
-            foreach (ProductionStepViewModel step in Steps.ToList()) {
-                DeleteStep(step);
+            ProductionLineViewModel innerLine = new ProductionLineViewModel(subLine.ProductionLine, serviceProvider);
+            foreach (SubLineViewModel innerSubLine in innerLine.SubLines.ToList()) {
+                innerLine.DeleteSubLine(innerSubLine);
+            }
+            foreach (ProductionStepViewModel innerStep in innerLine.Steps.ToList()) {
+                innerLine.DeleteStep(innerStep);
             }
 
-            lineManager.TryDelete(ProductionLine);
-
-            if (Parent != null) {
-                Parent.SubLines.Remove(this);
-            }
+            lineManager.TryDelete(subLine.ProductionLine);
+            SubLines.Remove(subLine);
         }
 
-        public void RaiseShowLineRequested() {
-            ShowLineRequested?.Invoke(this);
+        public void AddConnection(
+            ProductionPortViewModel startPort,
+            ProductionPortViewModel endPort,
+            bool isStartExposed,
+            bool isEndExposed
+        ) {
+            ProductionPortViewModel inputVM = startPort.Type == PortType.Input ? endPort : startPort;
+            ProductionPortViewModel outputVM = startPort.Type == PortType.Input ? startPort : endPort;
+
+            if (!connectionManager.CreateAndAdd(inputVM.Port, outputVM.Port, out Connection connection)) return;
+            ProductionLine.Connections.Add(connection.ID);
+
+            ConnectionViewModel connectionVM = new ConnectionViewModel(connection, inputVM, outputVM, serviceProvider);
+            inputVM.Connections.Add(connectionVM);
+            outputVM.Connections.Add(connectionVM);
+
+            if (outputVM.AreNeedsMetByPrioritySteps()) inputVM.PushResources();
+            else outputVM.PullResources();
+
+            startPort.IsExposed = isStartExposed;
+            endPort.IsExposed = isEndExposed;
+
+            Connections.Add(connectionVM);
+        }
+
+        public void DeleteConnection(ConnectionViewModel connection) {
+            connection.Input.Connections.Remove(connection);
+            connection.Output.Connections.Remove(connection);
+            Connections.Remove(connection);
+            connectionManager.TryDelete(connection.Connection);
         }
 
         public bool DoesConnectionAlreadyExist(int id1, int id2, out ConnectionViewModel? connection) {
-            foreach(ConnectionViewModel connectionVM in Connections) {
+            foreach (ConnectionViewModel connectionVM in Connections) {
                 if ((connectionVM.Input.ID == id1 && connectionVM.Output.ID == id2) ||
                     (connectionVM.Input.ID == id2 && connectionVM.Output.ID == id1)) {
                     connection = connectionVM;
@@ -345,9 +276,20 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             return false;
         }
 
-        public async Task SearchIconsAsync() {
-            FilteredIcons = (await searchService.Search(AllIcons, IconSearchTerm, pair => pair.Key)).ToList();
-            OnPropertyChanged(nameof(FilteredIcons));
+        public void SaveChanges() {
+            lineManager.TryUpdate(_productionLine);
+        }
+
+        // Private Helpers
+
+        private void WireStepEvents(ProductionStepViewModel stepVM) {
+            stepVM.DuplicateRequested += DuplicateStep;
+            stepVM.DeleteRequested += DeleteStep;
+        }
+
+        private void WireSubLineEvents(SubLineViewModel subLineVM) {
+            subLineVM.ShowLineRequested += (sl) => SubLineShowRequested?.Invoke(sl);
+            subLineVM.DeleteRequested += DeleteSubLine;
         }
     }
 }

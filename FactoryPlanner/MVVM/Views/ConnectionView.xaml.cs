@@ -1,5 +1,6 @@
 using FactoryPlanner.Core.MVVM.Models;
 using FactoryPlanner.Core.MVVM.Models.ViewModels;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -52,7 +53,7 @@ namespace FactoryPlanner.MVVM.Views
 
         private void OnStepPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) {
             if (e.PropertyName == nameof(ProductionStepViewModel.Position) ||
-                e.PropertyName == nameof(ProductionLineViewModel.Position)) {
+                e.PropertyName == nameof(SubLineViewModel.Position)) {
                 UpdateConnectionVisual();
             }
         }
@@ -79,7 +80,14 @@ namespace FactoryPlanner.MVVM.Views
 
             Point? start = GetPortCenter(connectionVM.Input);
             Point? end = GetPortCenter(connectionVM.Output);
-            if (start is null || end is null) return;
+
+            if (start is null || end is null) {
+                DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () => {
+                    AttachToPortHosts();
+                    UpdateConnectionVisual();
+                });
+                return;
+            }
 
             Point startPoint = start.Value;
             Point endPoint = end.Value;
@@ -132,7 +140,7 @@ namespace FactoryPlanner.MVVM.Views
 
             return FindDescendant<ProductionLineView>(root)
                 .FirstOrDefault(view =>
-                    view.DataContext is ProductionLineViewModel vm &&
+                    view.DataContext is SubLineViewModel vm &&
                     ((port.Type == PortType.Input && vm.InputPorts.Contains(port)) ||
                      (port.Type == PortType.Output && vm.OutputPorts.Contains(port))));
         }
@@ -160,7 +168,7 @@ namespace FactoryPlanner.MVVM.Views
                 return port.Index;
             }
 
-            if (hostView is ProductionLineView && hostView.DataContext is ProductionLineViewModel lineVM) {
+            if (hostView is ProductionLineView && hostView.DataContext is SubLineViewModel lineVM) {
                 return port.Type == PortType.Input
                     ? lineVM.InputPorts.IndexOf(port)
                     : lineVM.OutputPorts.IndexOf(port);

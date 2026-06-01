@@ -262,9 +262,9 @@ namespace FactoryPlanner.MVVM.Pages
             if (ViewModel == null || !hasLoaded) return;
 
             ViewModel.CurrentProductionLine.SubLines.CollectionChanged += OnNodeCollectionChanged;
-            foreach (ProductionLineViewModel lineVM in ViewModel.CurrentProductionLine.SubLines) {
-                _ = UpdateNodePosition(lineVM);
-                lineVM.PropertyChanged += OnNodePropertyChanged;
+            foreach (SubLineViewModel subLineVM in ViewModel.CurrentProductionLine.SubLines) {
+                _ = UpdateNodePosition(subLineVM);
+                subLineVM.PropertyChanged += OnNodePropertyChanged;
             }
 
             ViewModel.CurrentProductionLine.Steps.CollectionChanged += OnNodeCollectionChanged;
@@ -284,13 +284,12 @@ namespace FactoryPlanner.MVVM.Pages
             }
 
             if (container != null) {
+                node.Position = node.Position; // Force position snap
                 Canvas.SetLeft(container, node.Position.X);
                 Canvas.SetTop(container, node.Position.Y);
 
                 if (container is FrameworkElement element && ViewModel != null && ViewModel.UserSettings.SnapToGrid) {
-                    int gridSize = ViewModel.GridSize;
-                    element.Width = Math.Ceiling(element.ActualWidth / gridSize) * gridSize;
-                    element.Height = Math.Ceiling(element.ActualHeight / gridSize) * gridSize;
+                    ApplySnapToGrid(element);
                 }
             }
         }
@@ -298,7 +297,7 @@ namespace FactoryPlanner.MVVM.Pages
         private Task<UIElement?> TryGetContainerAsync(ItemsControl itemsControl, IProductionNode node) {
             TaskCompletionSource<UIElement?> taskCompletionSource = new TaskCompletionSource<UIElement?>();
 
-            bool wasQueued = itemsControl.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () => {
+            bool wasQueued = itemsControl.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () => {
                 itemsControl.UpdateLayout();
                 UIElement? container = itemsControl.ContainerFromItem(node) as UIElement;
                 taskCompletionSource.TrySetResult(container);
@@ -311,10 +310,33 @@ namespace FactoryPlanner.MVVM.Pages
             return taskCompletionSource.Task;
         }
 
+        private void ApplySnapToGrid(FrameworkElement element) {
+            if (ViewModel == null || !ViewModel.UserSettings.SnapToGrid) return;
+            int gridSize = ViewModel.GridSize;
+
+            if (element.ActualWidth > 0 && element.ActualHeight > 0) {
+                element.MinWidth = Math.Ceiling(element.ActualWidth / gridSize) * gridSize;
+                element.MinHeight = Math.Ceiling(element.ActualHeight / gridSize) * gridSize;
+            }
+            else {
+                element.SizeChanged += OnSnapTargetSizeChanged;
+            }
+        }
+
+        private void OnSnapTargetSizeChanged(object sender, SizeChangedEventArgs e) {
+            if (sender is not FrameworkElement element) return;
+            if (e.NewSize.Width <= 0 || e.NewSize.Height <= 0) return;
+
+            if (ViewModel == null || !ViewModel.UserSettings.SnapToGrid) return;
+            int gridSize = ViewModel.GridSize;
+            element.MinWidth = Math.Ceiling(e.NewSize.Width / gridSize) * gridSize;
+            element.MinHeight = Math.Ceiling(e.NewSize.Height / gridSize) * gridSize;
+        }
+
         private ItemsControl? TryGetItemsControlForType(IProductionNode node) {
-            if (node is ProductionLineViewModel) return SubLinesItemsControl;
+            if (node is SubLineViewModel) return SubLinesItemsControl;
             if (node is ProductionStepViewModel) return StepsItemsControl;
-            
+
             Debug.Assert(false, $"Failed to get ItemsControl for type {node.GetType()}");
             return null;
         }

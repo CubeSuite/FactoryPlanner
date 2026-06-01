@@ -4,22 +4,12 @@ using FactoryPlanner.Core.Stores.UserSettings;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using static FactoryPlanner.Core.MVVM.Models.ProductionPort;
 
 namespace FactoryPlanner.MVVM.Views
 {
@@ -31,10 +21,9 @@ namespace FactoryPlanner.MVVM.Views
         private Point dragStartPoint;
 
         // Properties
+        private SubLineViewModel ViewModel => (SubLineViewModel)DataContext;
 
-        private ProductionLineViewModel ViewModel => (ProductionLineViewModel)DataContext;
-
-        // Constructors
+        // Constructor
 
         public ProductionLineView() {
             InitializeComponent();
@@ -47,44 +36,40 @@ namespace FactoryPlanner.MVVM.Views
         // Listeners
 
         private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs e) {
-            if (e.NewValue is ProductionLineViewModel line) {
-                line.LineDeletionRequested += OnFlyoutButtonClicked;
+            if (e.NewValue is SubLineViewModel subLine) {
+                subLine.LineDeletionRequested += OnLineDeletionFlyoutsClose;
             }
         }
 
-        private void OnFlyoutButtonClicked(ProductionLineViewModel line) {
+        private void OnLineDeletionFlyoutsClose(SubLineViewModel subLine) {
             OptionsFlyout.Hide();
             DeleteFlyout.Hide();
         }
 
         private void OnPointerPressed(object sender, PointerRoutedEventArgs e) {
-            if (DataContext is not ProductionLineViewModel lineVM) return;
+            if (DataContext is not SubLineViewModel subLineVM) return;
 
             PointerPoint pointer = e.GetCurrentPoint(Parent as UIElement);
             if (pointer.Properties.IsLeftButtonPressed) {
                 isDragging = true;
                 dragStartPoint = pointer.Position;
-                initialPosition = lineVM.Position;
+                initialPosition = subLineVM.Position;
                 CapturePointer(e.Pointer);
                 e.Handled = true;
             }
         }
 
         private void OnPointerMoved(object sender, PointerRoutedEventArgs e) {
-            if (!isDragging || DataContext is not ProductionLineViewModel lineVM) return;
+            if (!isDragging || DataContext is not SubLineViewModel subLineVM) return;
 
             PointerPoint pointer = e.GetCurrentPoint(Parent as UIElement);
             Point currentPoint = pointer.Position;
 
-            double deltaX = currentPoint.X - dragStartPoint.X;
-            double deltaY = currentPoint.Y - dragStartPoint.Y;
-
-            Point newPosition = new Point(
-                initialPosition.X + deltaX,
-                initialPosition.Y + deltaY
+            subLineVM.Position = new Point(
+                initialPosition.X + (currentPoint.X - dragStartPoint.X),
+                initialPosition.Y + (currentPoint.Y - dragStartPoint.Y)
             );
 
-            lineVM.Position = newPosition;
             e.Handled = true;
         }
 
@@ -127,7 +112,7 @@ namespace FactoryPlanner.MVVM.Views
         // Private Functions
 
         private void RaisePortPressed(object sender, PortType portType) {
-            if (sender is not UIElement element || DataContext is not ProductionLineViewModel lineVM) return;
+            if (sender is not UIElement element || DataContext is not SubLineViewModel subLineVM) return;
 
             int portIndex = portType switch {
                 PortType.Input => InputsContainer.GetElementIndex(element),
@@ -138,13 +123,13 @@ namespace FactoryPlanner.MVVM.Views
             if (portIndex < 0) return;
 
             ProductionPortViewModel? portVM = portType switch {
-                PortType.Input => lineVM.InputPorts[portIndex],
-                PortType.Output => lineVM.OutputPorts[portIndex],
+                PortType.Input => subLineVM.InputPorts[portIndex],
+                PortType.Output => subLineVM.OutputPorts[portIndex],
                 _ => null
             };
 
             if (portVM == null) {
-                Debug.Assert(false, $"Could not handle unknown port type '{portType.GetDescription()}'");
+                Debug.Assert(false, $"Could not handle unknown port type '{portType}'");
                 return;
             }
 
@@ -153,3 +138,5 @@ namespace FactoryPlanner.MVVM.Views
         }
     }
 }
+
+
