@@ -394,11 +394,14 @@ namespace FactoryPlanner.MVVM.Pages
 
         private void HandleStartDrawingConnection(FrameworkElement stepView, ProductionPortViewModel port) {
             ViewModel.StartPort = port;
-            string repeaterName = port.Type == PortType.Input ? "InputsContainer" : "OutputsContainer";
-            
-            if (stepView.FindName(repeaterName) is ItemsRepeater repeater &&
-                repeater.TryGetElement(port.VisualIndex) is FrameworkElement portElement
-            ) {
+
+            ItemsRepeater? repeater = null;
+            if (stepView is ProductionStepView psv)
+                repeater = port.Type == PortType.Input ? psv.InputsRepeater : psv.OutputsRepeater;
+            else if (stepView is ProductionLineView plv)
+                repeater = port.Type == PortType.Input ? plv.InputsRepeater : plv.OutputsRepeater;
+
+            if (repeater != null && repeater.TryGetElement(port.VisualIndex) is FrameworkElement portElement) {
                 Point portTopLeft = portElement.TransformToVisual(MainCanvas).TransformPoint(new Point(0, 0));
                 portPosition = new Point(
                     portTopLeft.X + (portElement.ActualWidth / 2),
