@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<UserControl x:Class="FactoryPlanner.MVVM.Controls.ProductionNodeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
+
+    <Border Background="{ThemeResource SolidBackgroundFillColorQuarternary}" CornerRadius="8">
+        <Grid x:Name="RootGrid" Margin="8" ColumnSpacing="8" RowSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <Button Style="{StaticResource AccentButtonStyle}">
+                <FontIcon Glyph="&#xE712;" />
+                <Button.Flyout>
+                    <Flyout x:Name="OptionsFlyout">
+                        <ContentPresenter x:Name="OptionsFlyoutPresenter" />
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+
+            <Button Style="{StaticResource DangerButtonStyle}" Grid.Column="2">
+                <FontIcon Glyph="&#xE74D;" />
+                <Button.Flyout>
+                    <Flyout x:Name="DeleteFlyout">
+                        <ContentPresenter x:Name="DeleteFlyoutPresenter" />
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+
+            <ContentPresenter x:Name="NodeContentPresenter" Grid.Column="1" HorizontalAlignment="Center" />
+
+            <FontIcon x:Name="DefaultIcon"
+                      Glyph="&#xEC07;"
+                      FontSize="60"
+                      Width="100"
+                      Height="100"
+                      Grid.Column="1"
+                      Grid.Row="1"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center" />
+
+            <Image x:Name="IconImage"
+                   Width="100"
+                   Height="100"
+                   Grid.Column="1"
+                   Grid.Row="1"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center" />
+
+            <ItemsRepeater x:Name="InputsContainer" Grid.Row="1" VerticalAlignment="Center">
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
+                                BorderBrush="DeepSkyBlue"
+                                BorderThickness="2"
+                                CornerRadius="15"
+                                Width="30"
+                                Height="30"
+                                PointerPressed="OnInputPointerPressed">
+                            <Image Source="{Binding Item.IconPath}" Margin="2" IsHitTestVisible="False" />
+                        </Border>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+
+            <ItemsRepeater x:Name="OutputsContainer" Grid.Column="2" Grid.Row="1" VerticalAlignment="Center">
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
+                                BorderBrush="Orange"
+                                BorderThickness="2"
+                                CornerRadius="15"
+                                Width="30"
+                                Height="30"
+                                Margin="0,4"
+                                PointerPressed="OnOutputPointerPressed">
+                            <Image Source="{Binding Item.IconPath}" Margin="2" IsHitTestVisible="False" />
+                        </Border>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+
+        </Grid>
+    </Border>
+</UserControl>
