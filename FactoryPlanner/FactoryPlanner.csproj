@@ -31,8 +31,7 @@
     <None Remove="MVVM\Views\MachineView.xaml" />
     <None Remove="MVVM\Views\MessageView\MessageView.xaml" />
     <None Remove="MVVM\Views\ItemView\ItemView.xaml" />
-    <None Remove="MVVM\Views\ProductionLineView.xaml" />
-    <None Remove="MVVM\Views\ProductionStepView.xaml" />
+    <None Remove="MVVM\Controls\ProductionNodeView.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -116,16 +115,19 @@
     <Page Update="MVVM\Views\ConnectionView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Update="MVVM\Controls\ProductionNodeView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <None Update="MVVM\Views\ItemView\ItemView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </None>
     <Page Update="MVVM\Views\ProductionLineView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="MVVM\Views\LocalGameView.xaml">
+    <Page Update="MVVM\Views\ProductionStepView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="MVVM\Views\ProductionStepView.xaml">
+    <Page Update="MVVM\Views\LocalGameView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="MVVM\Views\RecipeView.xaml">

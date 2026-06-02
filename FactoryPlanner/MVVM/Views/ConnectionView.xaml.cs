@@ -149,8 +149,15 @@ namespace FactoryPlanner.MVVM.Views
             FrameworkElement? hostView = FindPortHostView(connectedStep);
             if (hostView == null) return null;
 
-            string repeaterName = connectedStep.Type == PortType.Input ? "InputsContainer" : "OutputsContainer";
-            if (hostView.FindName(repeaterName) is not ItemsRepeater repeater) return null;
+            ItemsRepeater? repeater = null;
+            if (hostView is ProductionStepView stepView) {
+                repeater = connectedStep.Type == PortType.Input ? stepView.InputsRepeater : stepView.OutputsRepeater;
+            }
+            else if (hostView is ProductionLineView lineView) {
+                repeater = connectedStep.Type == PortType.Input ? lineView.InputsRepeater : lineView.OutputsRepeater;
+            }
+
+            if (repeater == null) return null;
 
             int portIndex = GetPortIndex(hostView, connectedStep);
             if (portIndex < 0) return null;

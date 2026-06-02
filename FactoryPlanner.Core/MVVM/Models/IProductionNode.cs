@@ -16,5 +16,8 @@ namespace FactoryPlanner.Core.MVVM.Models
         public Point Position { get; set; }
         public List<ProductionPortViewModel> InputPorts { get; }
         public List<ProductionPortViewModel> OutputPorts { get; }
+
+        // Methods
+        public void SaveChanges();
     }
 }

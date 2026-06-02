@@ -5,7 +5,6 @@ using FactoryPlanner.Core.Stores;
 using FactoryPlanner.Services;
 using FactoryPlanner.Stores.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Xaml;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,12 +66,8 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
                 _productionLine.IconPath = value;
                 SaveChanges();
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(DefaultIconVisibility));
             }
         }
-
-        public Visibility DefaultIconVisibility =>
-            string.IsNullOrEmpty(IconPath) ? Visibility.Visible : Visibility.Collapsed;
 
         public Point Position {
             get => _productionLine.Position;
