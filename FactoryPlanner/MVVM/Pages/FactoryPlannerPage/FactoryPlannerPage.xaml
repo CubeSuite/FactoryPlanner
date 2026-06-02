@@ -6,6 +6,7 @@
       xmlns:local="using:FactoryPlanner.MVVM.Pages"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:views="using:FactoryPlanner.MVVM.Views"
+      xmlns:controls="using:FactoryPlanner.MVVM.Controls"
       mc:Ignorable="d">
 
     <Grid Margin="8"
@@ -37,35 +38,35 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <ItemsControl x:Name="StepsItemsControl"
+            <controls:CanvasItemsControl x:Name="StepsItemsControl"
                           ItemsSource="{Binding CurrentProductionLine.Steps}">
-                <ItemsControl.ItemsPanel>
+                <controls:CanvasItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <Canvas />
                     </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
+                </controls:CanvasItemsControl.ItemsPanel>
+                <controls:CanvasItemsControl.ItemTemplate>
                     <DataTemplate>
                         <views:ProductionStepView PortPressed="OnProductionNodePortPressed" />
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
+                </controls:CanvasItemsControl.ItemTemplate>
 
-            </ItemsControl>
+            </controls:CanvasItemsControl>
 
-            <ItemsControl x:Name="SubLinesItemsControl"
+            <controls:CanvasItemsControl x:Name="SubLinesItemsControl"
                           ItemsSource="{Binding CurrentProductionLine.SubLines}">
-                <ItemsControl.ItemsPanel>
+                <controls:CanvasItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <Canvas />
                     </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
+                </controls:CanvasItemsControl.ItemsPanel>
+                <controls:CanvasItemsControl.ItemTemplate>
                     <DataTemplate>
                         <views:ProductionLineView PortPressed="OnProductionNodePortPressed" />
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
+                </controls:CanvasItemsControl.ItemTemplate>
 
-            </ItemsControl>
+            </controls:CanvasItemsControl>
         </Canvas>
 
         <Button ToolTipService.ToolTip="To Parent"

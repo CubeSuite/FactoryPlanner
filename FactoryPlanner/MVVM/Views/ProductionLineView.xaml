@@ -1,133 +1,49 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<UserControl x:Class="FactoryPlanner.MVVM.Views.ProductionLineView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:local="using:FactoryPlanner.MVVM.Views"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             DataContextChanged="OnDataContextChanged"
-             DoubleTapped="OnDoubleTapped"
-             PointerMoved="OnPointerMoved"
-             PointerPressed="OnPointerPressed"
-             PointerReleased="OnPointerReleased"
-             mc:Ignorable="d">
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<controls:DraggableNodeControl x:Class="FactoryPlanner.MVVM.Views.ProductionLineView"
+                               xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                               xmlns:controls="using:FactoryPlanner.MVVM.Controls"
+                               xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                               xmlns:local="using:FactoryPlanner.MVVM.Views"
+                               xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                               DataContextChanged="OnDataContextChanged"
+                               DoubleTapped="OnDoubleTapped"
+                               PointerMoved="OnPointerMoved"
+                               PointerPressed="OnPointerPressed"
+                               PointerReleased="OnPointerReleased"
+                               mc:Ignorable="d">
 
-    <Border Background="{ThemeResource SolidBackgroundFillColorQuarternary}"
-            CornerRadius="8">
-        <Grid Margin="8"
-              ColumnSpacing="8"
-              RowSpacing="8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition />
-            </Grid.RowDefinitions>
+    <Grid>
+        <controls:ProductionNodeView x:Name="NodeView"
+                                     IconPath="{Binding IconPath}"
+                                     InputPortPressed="OnInputPointerPressed"
+                                     InputPorts="{Binding InputPorts}"
+                                     OutputPortPressed="OnOutputPointerPressed"
+                                     OutputPorts="{Binding OutputPorts}">
 
-            <!--  Options Button  -->
-            <Button Style="{StaticResource AccentButtonStyle}">
-                <FontIcon Glyph="&#xE712;" />
-                <Button.Flyout>
-                    <Flyout x:Name="OptionsFlyout">
-                        <StackPanel Spacing="8">
-                            <AutoSuggestBox Text="{Binding IconSearchTerm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                            PlaceholderText="Change Icon"
-                                            ItemsSource="{Binding FilteredIcons}"
-                                            HorizontalAlignment="Stretch"
-                                            DisplayMemberPath="Key"
-                                            QueryIcon="Find"
-                                            SuggestionChosen="OnIconBoxSuggestionChosen" />
-                        </StackPanel>
-                    </Flyout>
-                </Button.Flyout>
-            </Button>
+            <controls:ProductionNodeView.OptionsFlyoutContent>
+                <AutoSuggestBox Text="{Binding IconSearchTerm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                PlaceholderText="Change Icon"
+                                ItemsSource="{Binding FilteredIcons}"
+                                HorizontalAlignment="Stretch"
+                                DisplayMemberPath="Key"
+                                QueryIcon="Find"
+                                SuggestionChosen="OnIconBoxSuggestionChosen" />
+            </controls:ProductionNodeView.OptionsFlyoutContent>
 
-            <Button Style="{StaticResource DangerButtonStyle}"
-                    Grid.Column="2">
-                <FontIcon Glyph="&#xE74D;" />
-                <Button.Flyout>
-                    <Flyout x:Name="DeleteFlyout">
-                        <Button Content="Delete This Production Line"
-                                Style="{StaticResource DangerButtonStyle}"
-                                Command="{Binding DeleteCommand}" />
-                    </Flyout>
-                </Button.Flyout>
-            </Button>
+            <controls:ProductionNodeView.DeleteFlyoutContent>
+                <Button Content="Delete This Production Line"
+                        Style="{StaticResource DangerButtonStyle}"
+                        Command="{Binding DeleteCommand}" />
+            </controls:ProductionNodeView.DeleteFlyoutContent>
 
             <TextBox Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      PlaceholderText="Name..."
                      MinWidth="0"
-                     Grid.Column="1"
                      HorizontalAlignment="Center"
                      LostFocus="OnNameBoxLostFocus" />
 
-            <FontIcon Glyph="&#xEC07;"
-                      FontSize="60"
-                      Width="100"
-                      Height="100"
-                      Grid.Column="1"
-                      Grid.Row="1"
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Center"
-                      Visibility="{Binding DefaultIconVisibility, UpdateSourceTrigger=PropertyChanged}" />
+        </controls:ProductionNodeView>
+    </Grid>
 
-            <Image Source="{Binding IconPath}"
-                   Width="100"
-                   Height="100"
-                   Grid.Column="1"
-                   Grid.Row="1"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center" />
-
-            <!--  Inputs  -->
-            <ItemsRepeater x:Name="InputsContainer"
-                           ItemsSource="{Binding InputPorts}"
-                           Grid.Row="1"
-                           VerticalAlignment="Center">
-                <ItemsRepeater.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
-                                BorderBrush="DeepSkyBlue"
-                                BorderThickness="2"
-                                CornerRadius="15"
-                                Width="30"
-                                Height="30"
-                                PointerPressed="OnInputPointerPressed">
-                            <Image Source="{Binding Item.IconPath}"
-                                   Margin="2"
-                                   IsHitTestVisible="False" />
-                        </Border>
-                    </DataTemplate>
-                </ItemsRepeater.ItemTemplate>
-            </ItemsRepeater>
-
-
-            <!--  Outputs  -->
-            <ItemsRepeater x:Name="OutputsContainer"
-                           ItemsSource="{Binding OutputPorts}"
-                           Grid.Column="2"
-                           Grid.Row="1"
-                           VerticalAlignment="Center">
-                <ItemsRepeater.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
-                                BorderBrush="Orange"
-                                BorderThickness="2"
-                                CornerRadius="15"
-                                Width="30"
-                                Height="30"
-                                Margin="0,4"
-                                PointerPressed="OnOutputPointerPressed">
-                            <Image Source="{Binding Item.IconPath}"
-                                   Margin="2"
-                                   IsHitTestVisible="False" />
-                        </Border>
-                    </DataTemplate>
-                </ItemsRepeater.ItemTemplate>
-            </ItemsRepeater>
-        </Grid>
-    </Border>
-</UserControl>
+</controls:DraggableNodeControl>
