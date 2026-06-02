@@ -13,8 +13,8 @@ namespace FactoryPlanner.MVVM.Views
     {
         // Properties
         private SubLineViewModel ViewModel => (SubLineViewModel)DataContext;
-        public ItemsRepeater InputsRepeater => NodeView.InputsRepeater;
-        public ItemsRepeater OutputsRepeater => NodeView.OutputsRepeater; // ToDo: replace with getters
+        public override ItemsRepeater InputsRepeater => NodeView.InputsRepeater;
+        public override ItemsRepeater OutputsRepeater => NodeView.OutputsRepeater;
 
         // Constructors
         public ProductionLineView() {
@@ -23,8 +23,6 @@ namespace FactoryPlanner.MVVM.Views
 
         // Abstract Overrides
         protected override IProductionNode? GetNode() => DataContext as IProductionNode;
-        protected override ItemsRepeater GetInputsRepeater() => NodeView.InputsRepeater;
-        protected override ItemsRepeater GetOutputsRepeater() => NodeView.OutputsRepeater;
 
         // Listeners
         private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs e) {
