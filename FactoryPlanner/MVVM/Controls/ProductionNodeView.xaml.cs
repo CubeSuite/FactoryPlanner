@@ -97,17 +97,17 @@ namespace FactoryPlanner.MVVM.Controls
         }
 
         private static void OnIconPathChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
-            var view = (ProductionNodeView)d;
+            ProductionNodeView node = (ProductionNodeView)d;
             string? path = e.NewValue as string;
             bool hasIcon = !string.IsNullOrEmpty(path);
             if (hasIcon) {
-                try { view.IconImage.Source = new BitmapImage(new Uri(path!)); }
-                catch { view.IconImage.Source = null; }
+                try { node.IconImage.Source = new BitmapImage(new Uri(path!)); }
+                catch { node.IconImage.Source = null; }
             }
             else {
-                view.IconImage.Source = null;
+                node.IconImage.Source = null;
             }
-            view.DefaultIcon.Visibility = hasIcon ? Visibility.Collapsed : Visibility.Visible;
+            node.DefaultIcon.Visibility = hasIcon ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private static void OnInputPortsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
