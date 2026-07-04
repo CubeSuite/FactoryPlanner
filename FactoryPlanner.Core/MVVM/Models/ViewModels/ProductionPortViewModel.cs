@@ -1,15 +1,18 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using FactoryPlanner.Core.Stores;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.ML.OnnxRuntime;
+using Microsoft.UI.Xaml;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Appointments;
 
 namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 {
-    public class ProductionPortViewModel : ObservableObject 
+    public partial class ProductionPortViewModel : ObservableObject 
     {
         // Services & Stores
         private readonly IProductionPortManager portManager;
@@ -18,7 +21,6 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
         private ProductionPort _port;
         private ProductionStepViewModel _parent;
         private List<ConnectionViewModel> _connections;
-        private double _quantity;
         private int _visualIndex;
 
         // Properties
@@ -29,16 +31,20 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
         public int Index => _port.Index;
         public List<ConnectionViewModel> Connections => _connections;
 
+        [ObservableProperty]
+        public partial double Quantity { get; set; }
+
+        public double Max => Type switch {
+            PortType.Input => Parent.Recipe.InputEntries[Index].Rate * Parent.NumMachines,
+            PortType.Output => Parent.Recipe.OutputEntries[Index].Rate * Parent.NumMachines,
+            _ => 0
+        };
+
         public Item Item => Type switch {
             PortType.Input => Parent.Recipe.InputEntries[Index].Item,
             PortType.Output => Parent.Recipe.OutputEntries[Index].Item,
             _ => new Item() { Name = "Unknown Item" }
         };
-
-        public double Quantity {
-            get => _quantity;
-            set => _quantity = value;
-        }
 
         public bool IsExposed {
             get => _port.IsExposed;
@@ -55,6 +61,12 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             set => _visualIndex = value;
         }
 
+        public Visibility WarningTintVisibility => Type switch {
+            PortType.Input => Connections.Sum(connection => connection.Quantity) >= Max ? Visibility.Collapsed : Visibility.Visible,
+            PortType.Output => Connections.Sum(connection => connection.Quantity) == Max ? Visibility.Collapsed : Visibility.Visible,
+            _ => Visibility.Collapsed
+        };
+
         // Constructors
 
         public ProductionPortViewModel(ProductionPortViewModel port, IServiceProvider serviceProvider) {
@@ -69,16 +81,19 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             _port = port;
             _parent = parent;
             _connections = new List<ConnectionViewModel>();
+            SetQuantityFromStep(parent);
+        }
+
+        // Listeners
+
+        partial void OnQuantityChanged(double value) {
+            OnPropertyChanged(nameof(WarningTintVisibility));
         }
 
         // Public Functions
 
         public void UpdateConnections(ProductionStepViewModel caller) {
-            Quantity = Type switch {
-                PortType.Input => caller.NumMachines * caller.Recipe.InputEntries[Index].Rate,
-                PortType.Output => caller.NumMachines * caller.Recipe.OutputEntries[Index].Rate,
-                _ => 0
-            };
+            SetQuantityFromStep(caller);
 
             foreach (ConnectionViewModel connection in Connections) {
                 connection.UpdateConnections(this);
@@ -89,15 +104,12 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
             if (Parent.CalculateUpdates) {
                 Quantity = Connections.Sum(connection => connection.Quantity);
             }
-            else {
-                Quantity = Type switch {
-                    PortType.Input => Parent.NumMachines * Parent.Recipe.InputEntries[Index].Rate / Connections.Count,
-                    PortType.Output => Parent.NumMachines * Parent.Recipe.OutputEntries[Index].Rate / Connections.Count,
-                    _ => 0
-                };
+            else if (Connections.Count != 0){
+                Quantity = Max / Connections.Count;
             }
 
             Parent.UpdateConnections(this);
+            OnPropertyChanged(nameof(WarningTintVisibility));
         }
 
         public bool AreNeedsMet() {
@@ -112,42 +124,63 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
 
         public void PushResources() {
             double available = Parent.NumMachines * Parent.Recipe.OutputEntries[Index].Rate;
+            Quantity = 0;
 
             IEnumerable<ConnectionViewModel> priority = Connections.Where(connection => !connection.Output.Parent.CalculateUpdates);
             foreach(ConnectionViewModel connection in priority) {
                 connection.Quantity = Math.Min(connection.Output.Quantity, available);
                 available -= connection.Quantity;
+                Quantity += connection.Quantity;
                 connection.UpdateConnections(this);
             }
 
+
+            Quantity += available;
             IEnumerable<ConnectionViewModel> sharers = Connections.Where(connection => connection.Output.Parent.CalculateUpdates);
             double each = available / sharers.Count();
             foreach(ConnectionViewModel connection in sharers) {
                 connection.Quantity = each;
                 connection.UpdateConnections(this);
             }
+
+            OnPropertyChanged(nameof(WarningTintVisibility));
         }
 
         public void PullResources() {
             double needed = Parent.NumMachines * Parent.Recipe.InputEntries[Index].Rate;
+            Quantity = 0;
 
             IEnumerable<ConnectionViewModel> priority = Connections.Where(connection => !connection.Input.Parent.CalculateUpdates);
             foreach(ConnectionViewModel connection in priority) {
                 connection.Quantity = Math.Min(connection.Input.Quantity, needed);
                 needed -= connection.Quantity;
+                Quantity += connection.Quantity;
                 connection.UpdateConnections(this);
             }
 
+            Quantity += needed;
             IEnumerable<ConnectionViewModel> sharers = Connections.Where(connection => connection.Input.Parent.CalculateUpdates);
             double each = needed / sharers.Count();
             foreach(ConnectionViewModel connection in sharers) {
                 connection.Quantity = each;
                 connection.UpdateConnections(this);
             }
+
+            OnPropertyChanged(nameof(WarningTintVisibility));
         }
 
         public void SaveChanges() {
             portManager.TryUpdate(Port);
+        }
+
+        // Private Functions
+
+        private void SetQuantityFromStep(ProductionStepViewModel step) {
+            Quantity = Type switch {
+                PortType.Input => step.NumMachines * step.Recipe.InputEntries[Index].Rate,
+                PortType.Output => step.NumMachines * step.Recipe.OutputEntries[Index].Rate,
+                _ => 0
+            };
         }
     }
 }

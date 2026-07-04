@@ -205,6 +205,10 @@ namespace FactoryPlanner.MVVM.Pages
         [RelayCommand]
         private void UpALevel() {
             if (CurrentProductionLine.Parent != null) {
+                foreach(SubLineViewModel subLine in CurrentProductionLine.Parent.SubLines) {
+                    subLine.RefreshPorts();
+                }
+
                 CurrentProductionLine = CurrentProductionLine.Parent;
             }
             else if (lineManager.CreateAndAdd(out ProductionLine newParentModel, -1)) {

@@ -20,6 +20,7 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
     public partial class SubLineViewModel : ObservableObject, IProductionNode
     {
         // Services & Stores
+        private readonly IServiceProvider serviceProvider;
         private readonly IUserSettings userSettings;
         private readonly ISearchService searchService;
         private readonly IProductionLineManager lineManager;
@@ -101,6 +102,7 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
         // Constructor
 
         public SubLineViewModel(ProductionLine productionLine, IServiceProvider serviceProvider) {
+            this.serviceProvider = serviceProvider;
             userSettings = serviceProvider.GetRequiredService<IUserSettings>();
             searchService = serviceProvider.GetRequiredService<ISearchService>();
             lineManager = serviceProvider.GetRequiredService<IProductionLineManager>();
@@ -174,6 +176,24 @@ namespace FactoryPlanner.Core.MVVM.Models.ViewModels
         public async Task SearchIconsAsync() {
             FilteredIcons = (await searchService.Search(AllIcons, IconSearchTerm, pair => pair.Key)).ToList();
             OnPropertyChanged(nameof(FilteredIcons));
+        }
+
+        public void RefreshPorts() {
+            _inputPorts.Clear();
+            _outputPorts.Clear();
+            foreach (int stepId in _productionLine.Steps) {
+                if (!stepManager.TryGet(stepId, out ProductionStep step)) continue;
+                ProductionStepViewModel stepVM = new ProductionStepViewModel(step, serviceProvider);
+                foreach (ProductionPortViewModel port in stepVM.InputPorts) _inputPorts.Add(port);
+                foreach (ProductionPortViewModel port in stepVM.OutputPorts) _outputPorts.Add(port);
+            }
+
+            _connectedPortIds.Clear();
+            foreach (int connectionId in _productionLine.Connections) {
+                if (!connectionManager.TryGet(connectionId, out Connection connection)) continue;
+                _connectedPortIds.Add(connection.InputPortID);
+                _connectedPortIds.Add(connection.OutputPortID);
+            }
         }
     }
 }

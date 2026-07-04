@@ -4,6 +4,7 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Diagnostics;
 using Windows.Foundation;
@@ -91,11 +92,14 @@ namespace FactoryPlanner.MVVM.Controls
             IProductionNode? node = GetNode();
             if (node == null) return;
 
-            int portIndex = portType switch {
-                PortType.Input => InputsRepeater.GetElementIndex(element),
-                PortType.Output => OutputsRepeater.GetElementIndex(element),
-                _ => -1
+            ItemsRepeater repeater = portType switch {
+                PortType.Input => InputsRepeater,
+                PortType.Output => OutputsRepeater,
+                _ => null!
             };
+
+            UIElement? repeaterChild = GetRepeaterChild(element, repeater);
+            int portIndex = repeaterChild != null ? repeater.GetElementIndex(repeaterChild) : -1;
 
             if (portIndex < 0) return;
 
@@ -112,6 +116,16 @@ namespace FactoryPlanner.MVVM.Controls
 
             portVM.VisualIndex = portIndex;
             PortPressed?.Invoke(this, portVM);
+        }
+
+        private static UIElement? GetRepeaterChild(UIElement element, ItemsRepeater repeater) {
+            DependencyObject? current = element;
+            while (current != null) {
+                if (VisualTreeHelper.GetParent(current) is ItemsRepeater parent && parent == repeater)
+                    return current as UIElement;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return null;
         }
     }
 }

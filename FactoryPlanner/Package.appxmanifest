@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
@@ -8,7 +8,7 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="53be8d4b-0165-4689-9471-ce2b3b860d7b"
+    Name="FactoryPlanner"
     Publisher="CN=ellio"
     Version="1.0.0.0" />
 

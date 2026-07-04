@@ -314,12 +314,12 @@ namespace FactoryPlanner.MVVM.Pages
             if (ViewModel == null || !ViewModel.UserSettings.SnapToGrid) return;
             int gridSize = ViewModel.GridSize;
 
+            element.SizeChanged -= OnSnapTargetSizeChanged;
+            element.SizeChanged += OnSnapTargetSizeChanged;
+
             if (element.ActualWidth > 0 && element.ActualHeight > 0) {
                 element.MinWidth = Math.Ceiling(element.ActualWidth / gridSize) * gridSize;
                 element.MinHeight = Math.Ceiling(element.ActualHeight / gridSize) * gridSize;
-            }
-            else {
-                element.SizeChanged += OnSnapTargetSizeChanged;
             }
         }
 

@@ -6,8 +6,12 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d">
 
-    <Border Background="{ThemeResource SolidBackgroundFillColorQuarternary}" CornerRadius="8">
-        <Grid x:Name="RootGrid" Margin="8" ColumnSpacing="8" RowSpacing="8">
+    <Border Background="{ThemeResource SolidBackgroundFillColorQuarternary}"
+            CornerRadius="8">
+        <Grid x:Name="RootGrid"
+              Margin="8"
+              ColumnSpacing="8"
+              RowSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -27,7 +31,8 @@
                 </Button.Flyout>
             </Button>
 
-            <Button Style="{StaticResource DangerButtonStyle}" Grid.Column="2">
+            <Button Style="{StaticResource DangerButtonStyle}"
+                    Grid.Column="2">
                 <FontIcon Glyph="&#xE74D;" />
                 <Button.Flyout>
                     <Flyout x:Name="DeleteFlyout">
@@ -36,7 +41,9 @@
                 </Button.Flyout>
             </Button>
 
-            <ContentPresenter x:Name="NodeContentPresenter" Grid.Column="1" HorizontalAlignment="Center" />
+            <ContentPresenter x:Name="NodeContentPresenter"
+                              Grid.Column="1"
+                              HorizontalAlignment="Center" />
 
             <FontIcon x:Name="DefaultIcon"
                       Glyph="&#xEC07;"
@@ -56,35 +63,59 @@
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center" />
 
-            <ItemsRepeater x:Name="InputsContainer" Grid.Row="1" VerticalAlignment="Center">
+            <ItemsRepeater x:Name="InputsContainer"
+                           Grid.Row="1"
+                           VerticalAlignment="Center">
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
-                                BorderBrush="DeepSkyBlue"
-                                BorderThickness="2"
-                                CornerRadius="15"
-                                Width="30"
-                                Height="30"
-                                PointerPressed="OnInputPointerPressed">
-                            <Image Source="{Binding Item.IconPath}" Margin="2" IsHitTestVisible="False" />
-                        </Border>
+                        <Grid Width="30"
+                              Height="30"
+                              Margin="0,4">
+                            <Border Background="Red"
+                                    CornerRadius="15"
+                                    IsHitTestVisible="False"
+                                    Opacity="0.5"
+                                    Visibility="{Binding WarningTintVisibility, UpdateSourceTrigger=PropertyChanged}" />
+                            <Border ToolTipService.ToolTip="{Binding Quantity}"
+                                    Background="{ThemeResource CardBackgroundFillColorDefault}"
+                                    BorderBrush="DeepSkyBlue"
+                                    BorderThickness="2"
+                                    CornerRadius="15"
+                                    PointerPressed="OnInputPointerPressed">
+                                <Image Source="{Binding Item.IconPath}"
+                                       Margin="2"
+                                       IsHitTestVisible="False" />
+                            </Border>
+                        </Grid>
                     </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
 
-            <ItemsRepeater x:Name="OutputsContainer" Grid.Column="2" Grid.Row="1" VerticalAlignment="Center">
+            <ItemsRepeater x:Name="OutputsContainer"
+                           Grid.Column="2"
+                           Grid.Row="1"
+                           VerticalAlignment="Center">
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{ThemeResource CardBackgroundFillColorDefault}"
-                                BorderBrush="Orange"
-                                BorderThickness="2"
-                                CornerRadius="15"
-                                Width="30"
-                                Height="30"
-                                Margin="0,4"
-                                PointerPressed="OnOutputPointerPressed">
-                            <Image Source="{Binding Item.IconPath}" Margin="2" IsHitTestVisible="False" />
-                        </Border>
+                        <Grid Width="30"
+                              Height="30"
+                              Margin="0,4">
+                            <Border Background="Red"
+                                    CornerRadius="15"
+                                    IsHitTestVisible="False"
+                                    Opacity="0.5"
+                                    Visibility="{Binding WarningTintVisibility, UpdateSourceTrigger=PropertyChanged}" />
+                            <Border ToolTipService.ToolTip="{Binding Quantity}"
+                                    Background="{ThemeResource CardBackgroundFillColorDefault}"
+                                    BorderBrush="Orange"
+                                    BorderThickness="2"
+                                    CornerRadius="15"
+                                    PointerPressed="OnOutputPointerPressed">
+                                <Image Source="{Binding Item.IconPath}"
+                                       Margin="2"
+                                       IsHitTestVisible="False" />
+                            </Border>
+                        </Grid>
                     </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>

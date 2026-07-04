@@ -41,6 +41,7 @@ namespace FactoryPlanner.MVVM.Views
 
         private void OnNameBoxLostFocus(object sender, RoutedEventArgs e) {
             ViewModel.SaveChanges();
+            
         }
 
         private void OnIconBoxSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs e) {
